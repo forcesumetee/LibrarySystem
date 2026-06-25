@@ -1,127 +1,129 @@
-﻿<Window x:Class="LibraryAdminPC.MainWindow"
+<Window x:Class="LibraryAdminPC.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:LibraryAdminPC.Views"
         Title="ระบบผู้ดูแลห้องสมุด" Height="820" Width="1280"
         WindowStartupLocation="CenterScreen"
-        Background="#F5F6FA"
-        FontFamily="Tahoma">
+        Background="{StaticResource BackgroundBrush}"
+        FontFamily="{StaticResource AppFontFamily}">
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="260"/>
+            <ColumnDefinition Width="264"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Sidebar -->
-        <Border Grid.Column="0" Background="#111827" Padding="16">
-            <!-- Use Grid to lock footer at bottom -->
-            <Grid>
+        <!-- ============================ Sidebar ============================ -->
+        <Border Grid.Column="0" Background="{StaticResource SidebarBrush}">
+            <Grid Margin="18,22,18,18">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>  <!-- Header -->
+                    <RowDefinition Height="Auto"/>  <!-- Brand header -->
+                    <RowDefinition Height="Auto"/>  <!-- Menu label -->
                     <RowDefinition Height="Auto"/>  <!-- Menu -->
                     <RowDefinition Height="*"/>     <!-- Spacer -->
-                    <RowDefinition Height="Auto"/>  <!-- Status -->
-                    <RowDefinition Height="Auto"/>  <!-- Company Footer -->
+                    <RowDefinition Height="Auto"/>  <!-- Status card -->
+                    <RowDefinition Height="Auto"/>  <!-- Company footer -->
                 </Grid.RowDefinitions>
 
-                <!-- Header -->
-                <StackPanel Grid.Row="0" Margin="0,0,0,16">
-                    <TextBlock Text="ผู้ดูแลห้องสมุด"
-                               Foreground="White"
-                               FontSize="20"
-                               FontWeight="SemiBold"/>
-                    <TextBlock Text="คอนโซลเจ้าหน้าที่ (Admin-PC)"
-                               Foreground="#9CA3AF"
-                               FontSize="12"
-                               Margin="0,4,0,0"/>
+                <!-- Brand header -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="2,0,0,22">
+                    <Border Width="42" Height="42" CornerRadius="11"
+                            Background="{StaticResource PrimaryBrush}"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="L" Foreground="White" FontSize="22" FontWeight="Bold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="ผู้ดูแลห้องสมุด"
+                                   Foreground="White" FontSize="17" FontWeight="SemiBold"/>
+                        <TextBlock Text="คอนโซลเจ้าหน้าที่ (Admin-PC)"
+                                   Foreground="{StaticResource SidebarMutedBrush}"
+                                   FontSize="11" Margin="0,2,0,0"/>
+                    </StackPanel>
                 </StackPanel>
 
+                <!-- Menu section label -->
+                <TextBlock Grid.Row="1" Text="เมนูหลัก"
+                           Foreground="{StaticResource SidebarMutedBrush}"
+                           FontSize="11" FontWeight="SemiBold"
+                           Margin="4,0,0,8"/>
+
                 <!-- Menu -->
-                <StackPanel Grid.Row="1" Margin="0,8,0,0">
+                <StackPanel Grid.Row="2">
                     <ToggleButton Content="แดชบอร์ด"
+                                  Style="{StaticResource SidebarNavToggleStyle}"
                                   Click="BtnDashboard_Click"
-                                  Height="40"
-                                  Margin="0,0,0,10"
-                                  Background="#1F2937"
-                                  Foreground="White"
-                                  BorderBrush="#374151"
-                                  FontWeight="SemiBold"
+                                  Margin="0,0,0,6"
                                   IsChecked="{Binding IsDashboardSelected}"/>
 
                     <ToggleButton Content="หนังสือ"
+                                  Style="{StaticResource SidebarNavToggleStyle}"
                                   Click="BtnBooks_Click"
-                                  Height="40"
-                                  Margin="0,0,0,10"
-                                  Background="#111827"
-                                  Foreground="White"
-                                  BorderBrush="#374151"
+                                  Margin="0,0,0,6"
                                   IsChecked="{Binding IsBooksSelected}"/>
 
                     <ToggleButton Content="นำเข้า"
+                                  Style="{StaticResource SidebarNavToggleStyle}"
                                   Click="BtnImport_Click"
-                                  Height="40"
-                                  Margin="0,0,0,10"
-                                  Background="#111827"
-                                  Foreground="White"
-                                  BorderBrush="#374151"
+                                  Margin="0,0,0,6"
                                   IsChecked="{Binding IsImportSelected}"/>
 
+                    <ToggleButton Content="โลโก้ &amp; พื้นหลัง"
+                                  Style="{StaticResource SidebarNavToggleStyle}"
+                                  Click="BtnBranding_Click"
+                                  Margin="0,0,0,6"
+                                  IsChecked="{Binding IsBrandingSelected}"/>
+
                     <ToggleButton Content="ตั้งค่า"
+                                  Style="{StaticResource SidebarNavToggleStyle}"
                                   Click="BtnSettings_Click"
-                                  Height="40"
-                                  Margin="0,0,0,10"
-                                  Background="#111827"
-                                  Foreground="White"
-                                  BorderBrush="#374151"
+                                  Margin="0,0,0,6"
                                   IsChecked="{Binding IsSettingsSelected}"/>
                 </StackPanel>
 
-                <!-- Status (above company footer) -->
-                <StackPanel Grid.Row="3" Margin="0,16,0,0">
-                    <Separator Background="#374151" />
-                    <TextBlock Text="สถานะ"
-                               Foreground="#9CA3AF"
-                               Margin="0,12,0,4"
-                               FontSize="12"/>
-                    <TextBlock Text="{Binding StatusText}"
-                               Foreground="White"
-                               FontSize="12"
-                               TextWrapping="Wrap"/>
-                    <TextBlock Text="{Binding ApiBaseUrlText}"
-                               Foreground="#9CA3AF"
-                               FontSize="11"
-                               Margin="0,6,0,0"
-                               TextWrapping="Wrap"/>
-                </StackPanel>
+                <!-- Status card -->
+                <Border Grid.Row="4" CornerRadius="12" Padding="14,12"
+                        Background="{StaticResource SidebarDarkBrush}" Margin="0,0,0,16">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                                     Fill="{StaticResource SidebarMutedBrush}"/>
+                            <TextBlock Text="สถานะ" Margin="8,0,0,0"
+                                       Foreground="{StaticResource SidebarMutedBrush}"
+                                       FontSize="11" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding StatusText}"
+                                   Foreground="White" FontSize="13" FontWeight="SemiBold"
+                                   Margin="0,8,0,0" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding ApiBaseUrlText}"
+                                   Foreground="{StaticResource SidebarMutedBrush}"
+                                   FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
 
-                <!-- Company Footer (LOCKED bottom-left) -->
-                <StackPanel Grid.Row="4" Margin="0,16,0,0">
+                <!-- Company footer -->
+                <StackPanel Grid.Row="5">
                     <TextBlock Text="NTY MULTIMEDIA CO.,LTD."
-                               Foreground="#9CA3AF"
-                               FontSize="11"
-                               HorizontalAlignment="Left"
-                               Margin="0,0,0,2"/>
+                               Foreground="{StaticResource SidebarMutedBrush}"
+                               FontSize="11" Margin="2,0,0,2"/>
                     <TextBlock Text="© 2026 All rights reserved."
-                               Foreground="#6B7280"
-                               FontSize="10"
-                               HorizontalAlignment="Left"
-                               Margin="0,0,0,0"/>
+                               Foreground="{StaticResource SidebarMutedBrush}"
+                               FontSize="10" Opacity="0.7" Margin="2,0,0,0"/>
                 </StackPanel>
-
             </Grid>
         </Border>
 
-        <!-- Main Area -->
+        <!-- ============================ Main Area ============================ -->
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="56"/>
+                <RowDefinition Height="64"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
             <!-- Top bar -->
-            <Border Grid.Row="0" Background="White" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1">
-                <Grid Margin="16,0">
+            <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+                <Grid Margin="24,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
@@ -130,46 +132,52 @@
 
                     <StackPanel Orientation="Vertical" VerticalAlignment="Center">
                         <TextBlock Text="{Binding PageTitle}"
-                                   FontSize="18"
-                                   FontWeight="SemiBold"
-                                   Foreground="#111827"/>
+                                   FontSize="19" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextBrush}"/>
                         <TextBlock Text="{Binding PageSubtitle}"
                                    FontSize="12"
-                                   Foreground="#6B7280"
+                                   Foreground="{StaticResource TextSecondBrush}"
                                    Margin="0,2,0,0"/>
                     </StackPanel>
 
                     <!-- License badge -->
                     <Button Grid.Column="1"
-                            Height="32"
-                            MinWidth="170"
-                            Padding="12,0"
-                            Margin="0,0,10,0"
+                            Height="36" MinWidth="172"
+                            Padding="14,0" Margin="0,0,10,0"
                             VerticalAlignment="Center"
+                            Cursor="Hand"
                             Background="{Binding LicenseBadgeBackground}"
                             Foreground="{Binding LicenseBadgeForeground}"
                             BorderBrush="{Binding LicenseBadgeBorderBrush}"
                             ToolTip="{Binding LicenseBadgeToolTip}"
                             Click="BtnLicenseBadge_Click">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="1" CornerRadius="9"
+                                        Padding="{TemplateBinding Padding}"
+                                        SnapsToDevicePixels="True">
+                                    <ContentPresenter HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
                         <TextBlock Text="{Binding LicenseBadgeText}"
-                                   FontWeight="SemiBold"
-                                   VerticalAlignment="Center"/>
+                                   FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </Button>
 
                     <Button Grid.Column="2"
                             Content="รีเฟรชสถานะ"
-                            Click="BtnRefreshStatus_Click"
-                            Height="32"
-                            Padding="12,0"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Height="36"
                             VerticalAlignment="Center"
-                            Background="#2563EB"
-                            Foreground="White"
-                            BorderBrush="#2563EB"/>
+                            Click="BtnRefreshStatus_Click"/>
                 </Grid>
             </Border>
 
             <!-- Content -->
-            <Border Grid.Row="1" Margin="16" Background="White" CornerRadius="12" Padding="12">
+            <Border Grid.Row="1" Margin="20" Style="{StaticResource CardStyle}" Padding="16">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <ContentControl x:Name="MainContent"/>
                 </ScrollViewer>

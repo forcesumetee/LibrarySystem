@@ -78,6 +78,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         set { _isSettingsSelected = value; OnPropertyChanged(); }
     }
 
+    // Additive (Task B / B1): sidebar "โลโก้ & พื้นหลัง" selected-state.
+    // Real BrandingView is wired in B5; for now navigation shows a placeholder.
+    private bool _isBrandingSelected;
+    public bool IsBrandingSelected
+    {
+        get => _isBrandingSelected;
+        set { _isBrandingSelected = value; OnPropertyChanged(); }
+    }
+
     // -------------------- License badge bindings --------------------
 
     private bool _isLicensed;
@@ -340,6 +349,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         IsBooksSelected = page == "books";
         IsImportSelected = page == "import";
         IsSettingsSelected = page == "settings";
+        IsBrandingSelected = page == "branding";   // additive (B1)
     }
 
     private void NavigateToDashboard()
@@ -537,12 +547,52 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         };
     }
 
+    // Additive (Task B / B1): branding page. Real BrandingView arrives in B5;
+    // this navigates to a lightweight placeholder so the shell + selected-state
+    // are fully testable now without touching the existing navigation methods.
+    private void NavigateToBranding()
+    {
+        if (!EnsureLicensedOrPrompt())
+        {
+            NavigateToSettings();
+            return;
+        }
+
+        SetSelected("branding");
+        PageTitle = "โลโก้ & พื้นหลัง";
+        PageSubtitle = "จัดการโลโก้และภาพพื้นหลังของจอแสดงผล";
+
+        MainContent.Content = BuildBrandingPlaceholder();
+    }
+
+    private UIElement BuildBrandingPlaceholder()
+    {
+        return new Border
+        {
+            Padding = new Thickness(16),
+            Child = new StackPanel
+            {
+                Children =
+                {
+                    new TextBlock { Text = "โลโก้ & พื้นหลัง", FontSize = 20, FontWeight = FontWeights.SemiBold },
+                    new TextBlock
+                    {
+                        Text = "หน้านี้จะถูกออกแบบในเฟส B5 (ใช้การตั้งค่าโลโก้/พื้นหลังเดิมร่วมกับหน้าตั้งค่า)",
+                        Margin = new Thickness(0, 10, 0, 0),
+                        TextWrapping = TextWrapping.Wrap
+                    }
+                }
+            }
+        };
+    }
+
     // -------------------- Events (from MainWindow.xaml) --------------------
 
     private void BtnDashboard_Click(object sender, RoutedEventArgs e) => NavigateToDashboard();
     private void BtnBooks_Click(object sender, RoutedEventArgs e) => NavigateToBooks();
     private void BtnImport_Click(object sender, RoutedEventArgs e) => NavigateToImport();
     private void BtnSettings_Click(object sender, RoutedEventArgs e) => NavigateToSettings();
+    private void BtnBranding_Click(object sender, RoutedEventArgs e) => NavigateToBranding();
 
     private void BtnLicenseBadge_Click(object sender, RoutedEventArgs e)
     {
@@ -565,6 +615,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (IsDashboardSelected) NavigateToDashboard();
         else if (IsBooksSelected) NavigateToBooks();
         else if (IsImportSelected) NavigateToImport();
+        else if (IsBrandingSelected) NavigateToBranding();   // additive (B1)
         else NavigateToSettings();
     }
 
