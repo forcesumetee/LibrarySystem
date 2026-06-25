@@ -1,0 +1,78 @@
+<UserControl x:Class="LibraryAdminPC.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+             FontFamily="Tahoma">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </UserControl.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="แดชบอร์ด"
+                   FontSize="20"
+                   FontWeight="SemiBold"
+                   Margin="0,0,0,10"/>
+
+        <!-- KPI -->
+        <Grid Grid.Row="1" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Background="#FFFFFF" CornerRadius="12" Padding="12" Margin="0,0,6,0">
+                <StackPanel>
+                    <TextBlock Text="จำนวนหนังสือทั้งหมด" Foreground="#666"/>
+                    <TextBlock Text="{Binding TotalBooks}" FontSize="28" FontWeight="Bold"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Background="#FFFFFF" CornerRadius="12" Padding="12" Margin="6,0,0,0">
+                <StackPanel>
+                    <TextBlock Text="อัปเดตล่าสุด" Foreground="#666"/>
+                    <TextBlock Text="{Binding LastUpdated}" FontSize="16" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Error Banner -->
+        <Border Grid.Row="2"
+                Background="#FFF7E6"
+                BorderBrush="#FFD08A"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="10"
+                Margin="0,0,0,10"
+                Visibility="{Binding HasError, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <TextBlock Text="{Binding Error}" Foreground="#8A4B00" TextWrapping="Wrap"/>
+        </Border>
+
+        <!-- Chart -->
+        <Border Grid.Row="3" Background="#FFFFFF" CornerRadius="12" Padding="12">
+            <Grid>
+                <!-- หมายเหตุ: ข้อความใน Tooltip/Legend ของ LiveChartsCore ใช้ SkiaSharp ต้องกำหนด Typeface เพื่อให้แสดงภาษาไทยได้ -->
+                <lvc:PieChart Series="{Binding CategorySeries}"
+                              LegendPosition="Right"
+                              LegendTextPaint="{Binding LegendTextPaint}"
+                              TooltipTextPaint="{Binding TooltipTextPaint}" />
+
+                <!-- Loading overlay -->
+                <Border Background="#80FFFFFF"
+                        Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <ProgressBar Width="220" Height="6" IsIndeterminate="True"/>
+                        <TextBlock Text="กำลังโหลดข้อมูล..." Margin="0,10,0,0" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

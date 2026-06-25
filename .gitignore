@@ -1,0 +1,44 @@
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# Android / Gradle
+.gradle/
+build/
+.idea/
+.kotlin/
+local.properties
+*.apk
+*.aab
+
+# Misc
+*.log
+Thumbs.db
+.DS_Store
+
+# Build output / staging / release
+Staging_Tester/
+release/
+_installer_out/
+*.zip
+*.exe
+*.dll
+*.pdb
+
+# Database (real data)
+*.db
+*.db-shm
+*.db-wal
+
+# Secrets
+appsettings.json
+appsettings.*.json
+
+# Licensing - DO NOT publish
+license_keys*.csv
+keys.csv
+KeyGenTool/
+LibraryLicenseIssuer/
