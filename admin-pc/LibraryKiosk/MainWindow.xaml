@@ -290,7 +290,7 @@
                                                Visibility="{Binding HasQuery, Converter={StaticResource InvBoolToVis}}" />
                                     <TextBox Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
                                              FontSize="36" Foreground="{StaticResource TextBrush}"
-                                             FontFamily="{StaticResource AppFontFamily}"
+                                             FontFamily="{StaticResource AppFontFamily}" ContextMenu="{x:Null}"
                                              Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center"
                                              CaretBrush="{StaticResource PrimaryBrush}" />
                                 </Grid>
@@ -356,25 +356,50 @@
                             <Run Text=" เล่ม" FontSize="30" Foreground="{StaticResource TextSecondBrush}" />
                         </TextBlock>
 
-                        <!-- Grid -->
-                        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto"
-                                      HorizontalScrollBarVisibility="Disabled"
-                                      Visibility="{Binding IsEmpty, Converter={StaticResource InvBoolToVis}}">
-                            <ItemsControl ItemsSource="{Binding FilteredBooks}" Margin="-12,0,-12,24">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <UniformGrid Columns="3" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Button Style="{StaticResource CardButtonStyle}"
-                                                Command="{Binding DataContext.SelectBookCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                CommandParameter="{Binding}" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
+                        <!-- Grid: rows of 3 inside a VirtualizingStackPanel so thousands of
+                             books stay smooth (only visible rows are realised). -->
+                        <ItemsControl x:Name="CardsHost" Grid.Row="3"
+                                      ItemsSource="{Binding BookRows}" Margin="-12,0,-12,24"
+                                      Visibility="{Binding IsEmpty, Converter={StaticResource InvBoolToVis}}"
+                                      VirtualizingPanel.IsVirtualizing="True"
+                                      VirtualizingPanel.VirtualizationMode="Recycling"
+                                      VirtualizingPanel.ScrollUnit="Pixel"
+                                      ScrollViewer.CanContentScroll="True"
+                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl.Template>
+                                <ControlTemplate TargetType="ItemsControl">
+                                    <ScrollViewer CanContentScroll="True" Focusable="False"
+                                                  VerticalScrollBarVisibility="Auto"
+                                                  HorizontalScrollBarVisibility="Disabled">
+                                        <ItemsPresenter />
+                                    </ScrollViewer>
+                                </ControlTemplate>
+                            </ItemsControl.Template>
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel Orientation="Vertical" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ItemsControl ItemsSource="{Binding Cards}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="3" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource CardButtonStyle}"
+                                                        Command="{Binding DataContext.SelectBookCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
                         <!-- Empty state -->
                         <StackPanel Grid.Row="3" VerticalAlignment="Center" HorizontalAlignment="Center"
@@ -676,7 +701,7 @@
                                             <TextBox Text="{Binding BaseUrlInput, UpdateSourceTrigger=PropertyChanged}"
                                                      FontFamily="{StaticResource MonoFontFamily}" FontSize="32"
                                                      Foreground="{StaticResource TextBrush}" Background="Transparent"
-                                                     BorderThickness="0" VerticalContentAlignment="Center"
+                                                     BorderThickness="0" VerticalContentAlignment="Center" ContextMenu="{x:Null}"
                                                      CaretBrush="{StaticResource PrimaryBrush}" />
                                         </Border>
                                         <Grid Margin="0,22,0,0">
@@ -795,6 +820,52 @@
                                         <TextBlock Text="{Binding ChangePinResult}" FontSize="28" FontWeight="SemiBold"
                                                    Foreground="{StaticResource SuccessBrush}" Margin="0,16,0,0"
                                                    Visibility="{Binding ChangePinResult, Converter={StaticResource StrToVis}}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- ระบบ -->
+                                <Border Background="{StaticResource SurfaceBrush}" CornerRadius="28" Padding="36,32" Margin="0,0,0,28">
+                                    <StackPanel>
+                                        <TextBlock Text="ระบบ" FontWeight="Bold" FontSize="36"
+                                                   Foreground="{StaticResource PrimaryBrush}" />
+
+                                        <!-- auto-start toggle -->
+                                        <Grid Margin="0,22,0,0">
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="เริ่มอัตโนมัติเมื่อเปิดเครื่อง" FontSize="30" Foreground="{StaticResource TextBrush}" />
+                                                <TextBlock Text="เปิดโปรแกรมเองเมื่อผู้ใช้ Windows ล็อกอิน" FontSize="24"
+                                                           Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0" />
+                                            </StackPanel>
+                                            <Button HorizontalAlignment="Right" Content="เปิดใช้งาน" Style="{StaticResource SecondaryButtonStyle}"
+                                                    FontSize="28" Command="{Binding ToggleAutoStartCommand}"
+                                                    Visibility="{Binding AutoStartEnabled, Converter={StaticResource InvBoolToVis}}" />
+                                            <Button HorizontalAlignment="Right" Content="ปิด (กำลังเปิดอยู่)" Style="{StaticResource SecondaryButtonStyle}"
+                                                    FontSize="28" Command="{Binding ToggleAutoStartCommand}"
+                                                    Visibility="{Binding AutoStartEnabled, Converter={StaticResource BoolToVis}}" />
+                                        </Grid>
+
+                                        <Border Height="1" Background="{StaticResource BorderBrush}" Margin="0,26,0,0" />
+
+                                        <!-- exit kiosk -->
+                                        <TextBlock Text="ออกจากโหมด Kiosk" FontSize="30" Foreground="{StaticResource TextBrush}" Margin="0,26,0,2" />
+                                        <TextBlock Text="ปิดโปรแกรม (ในโหมดเต็มจอ ออกได้ทางนี้เท่านั้น)" FontSize="24"
+                                                   Foreground="{StaticResource MutedBrush}" />
+                                        <Button Content="ปิดโปรแกรม" Command="{Binding ExitKioskCommand}"
+                                                HorizontalAlignment="Left" Cursor="Hand" Margin="0,18,0,0">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="X" Background="{StaticResource ErrorBrush}" CornerRadius="16" Padding="36,16" MinHeight="72">
+                                                        <TextBlock Text="{TemplateBinding Content}" FontSize="30" FontWeight="SemiBold"
+                                                                   Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsPressed" Value="True">
+                                                            <Setter TargetName="X" Property="Background" Value="#B3433A" />
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
                                     </StackPanel>
                                 </Border>
 

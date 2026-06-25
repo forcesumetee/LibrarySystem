@@ -63,9 +63,12 @@ public partial class HomeViewModel : ObservableObject
 
     // ---- search / filter ----
     [ObservableProperty] private string _query = "";
+    private const int GridColumns = 3;
     private string _selectedCategory = AllCategory;
     public ObservableCollection<CategoryChipViewModel> Categories { get; } = new();
     public ObservableCollection<BookCardViewModel> FilteredBooks { get; } = new();
+    /// <summary>Filtered books chunked into rows of 3 for the virtualizing grid.</summary>
+    public ObservableCollection<BookRowViewModel> BookRows { get; } = new();
     [ObservableProperty] private int _filteredCount;
     [ObservableProperty] private bool _hasQuery;
 
@@ -80,8 +83,20 @@ public partial class HomeViewModel : ObservableObject
     /// <summary>Last-applied display mode ("fullscreen"/"windowed"); the window reads this on load.</summary>
     public string DisplayMode { get; private set; } = "fullscreen";
 
+    /// <summary>Fullscreen = locked-down kiosk (block exit + idle reset); windowed = dev.</summary>
+    public bool IsLockdown => string.Equals(DisplayMode, "fullscreen", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Idle seconds before resetting browse for the next user (0 disables).</summary>
+    public int IdleResetSeconds { get; }
+
     /// <summary>Raised when the admin changes the display mode; the window applies it.</summary>
     public event Action<string>? DisplayModeChangeRequested;
+
+    /// <summary>Raised when the admin chooses to exit the kiosk (after the PIN gate).</summary>
+    public event EventHandler? ExitRequested;
+
+    /// <summary>Raised on idle reset so the window can scroll the grid back to the top.</summary>
+    public event EventHandler? ScrollResetRequested;
 
     // ---- admin settings overlay (Phase 5) ----
     public SettingsViewModel Settings { get; }
@@ -99,6 +114,7 @@ public partial class HomeViewModel : ObservableObject
             ? "windowed" : "fullscreen";
         _hideLogo = cfg.HideLogo;
         _hideBackground = cfg.HideBackground;
+        IdleResetSeconds = cfg.IdleResetSeconds;
 
         _sync = new SyncService(cfg.BaseUrl);
         _sync.SyncTriggered += OnSyncTriggered;
@@ -111,12 +127,25 @@ public partial class HomeViewModel : ObservableObject
             applyDisplayMode: ApplyDisplayMode,
             applyBranding: SetBrandingHidden,
             getDisplayName: () => DisplayName,
-            getBrandingAvailable: () => (_rawLogo != null, _rawBackground != null));
+            getBrandingAvailable: () => (_rawLogo != null, _rawBackground != null),
+            requestExit: () => ExitRequested?.Invoke(this, EventArgs.Empty));
+    }
+
+    /// <summary>Reset the browse view for the next user (idle timeout, fullscreen only).</summary>
+    public void ResetForIdle()
+    {
+        if (Settings.IsOpen) Settings.CloseCommand.Execute(null);
+        IsDetailOpen = false;
+        SelectedBook = null;
+        Query = "";
+        SelectCategory(AllCategory);
+        ScrollResetRequested?.Invoke(this, EventArgs.Empty);
     }
 
     private void ApplyDisplayMode(string mode)
     {
         DisplayMode = mode;
+        OnPropertyChanged(nameof(IsLockdown));
         DisplayModeChangeRequested?.Invoke(mode);
     }
 
@@ -264,6 +293,21 @@ public partial class HomeViewModel : ObservableObject
 
         FilteredCount = FilteredBooks.Count;
         IsEmpty = State == ConnectionState.Connected && FilteredBooks.Count == 0;
+
+        RebuildRows();
+    }
+
+    /// <summary>Chunk the filtered cards into rows of <see cref="GridColumns"/> for virtualization.</summary>
+    private void RebuildRows()
+    {
+        BookRows.Clear();
+        for (var i = 0; i < FilteredBooks.Count; i += GridColumns)
+        {
+            var count = Math.Min(GridColumns, FilteredBooks.Count - i);
+            var cards = new List<BookCardViewModel>(count);
+            for (var j = 0; j < count; j++) cards.Add(FilteredBooks[i + j]);
+            BookRows.Add(new BookRowViewModel(cards));
+        }
     }
 
     [RelayCommand]

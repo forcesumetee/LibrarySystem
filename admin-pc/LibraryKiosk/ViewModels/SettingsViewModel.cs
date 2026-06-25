@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -27,6 +28,8 @@ public partial class SettingsViewModel : ObservableObject
     private readonly Action<bool, bool> _applyBranding;       // (hideLogo, hideBackground)
     private readonly Func<string> _getDisplayName;
     private readonly Func<(bool logo, bool background)> _getBrandingAvailable;
+    private readonly Action _requestExit;
+    private readonly AutoStartService _autoStart;
 
     private readonly DispatcherTimer _lockTimer;
     private int _lockRemaining;
@@ -66,10 +69,13 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private double _uiScalePercent = 100;
     [ObservableProperty] private bool _isFullscreen = true;
 
+    // ---- system (Phase 6) ----
+    [ObservableProperty] private bool _autoStartEnabled;
+
     // ---- change-PIN / about ----
     [ObservableProperty] private string _changePinResult = "";
 
-    public string AboutVersion => "LibraryKiosk 1.0 (Phase 5)";
+    public string AboutVersion => "LibraryKiosk 1.0";
 
     public SettingsViewModel(
         SettingsService settings,
@@ -81,7 +87,8 @@ public partial class SettingsViewModel : ObservableObject
         Action<string> applyDisplayMode,
         Action<bool, bool> applyBranding,
         Func<string> getDisplayName,
-        Func<(bool logo, bool background)> getBrandingAvailable)
+        Func<(bool logo, bool background)> getBrandingAvailable,
+        Action requestExit)
     {
         _settings = settings;
         _sync = sync;
@@ -93,6 +100,10 @@ public partial class SettingsViewModel : ObservableObject
         _applyBranding = applyBranding;
         _getDisplayName = getDisplayName;
         _getBrandingAvailable = getBrandingAvailable;
+        _requestExit = requestExit;
+
+        var exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "";
+        _autoStart = new AutoStartService(exePath);
 
         Pad.Submitted += OnPadSubmitted;
 
@@ -186,10 +197,27 @@ public partial class SettingsViewModel : ObservableObject
         var s = _settings.Load();
         HideLogo = s.HideLogo;
         HideBackground = s.HideBackground;
+        AutoStartEnabled = _autoStart.IsEnabled();
 
         var (state, last) = _getStatus();
         LastUpdated = last;
     }
+
+    // ---- system: auto-start + exit ----
+
+    [RelayCommand]
+    private void ToggleAutoStart()
+    {
+        var result = _autoStart.Set(!AutoStartEnabled);
+        AutoStartEnabled = result;
+
+        var s = _settings.Load();
+        s.AutoStart = result;
+        _settings.Save(s);
+    }
+
+    [RelayCommand]
+    private void ExitKiosk() => _requestExit();
 
     [RelayCommand]
     private async Task SaveBaseUrl()
