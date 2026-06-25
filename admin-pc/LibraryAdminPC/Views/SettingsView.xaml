@@ -9,133 +9,204 @@
 
     <Grid Margin="6">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>  <!-- การเชื่อมต่อ -->
-            <RowDefinition Height="Auto"/>  <!-- Kiosk URL -->
-            <RowDefinition Height="Auto"/>  <!-- ลิขสิทธิ์ -->
-            <RowDefinition Height="*"/>     <!-- messages -->
+            <RowDefinition Height="Auto"/>  <!-- two cards: connection | license -->
+            <RowDefinition Height="Auto"/>  <!-- about -->
+            <RowDefinition Height="Auto"/>  <!-- messages -->
         </Grid.RowDefinitions>
 
-        <!-- ===================== การเชื่อมต่อ ===================== -->
-        <Border Grid.Row="0" Style="{StaticResource CardStyle}" Padding="20" Margin="0,0,0,14">
+        <!-- ===================== Row 0: Connection (left) | License (right) ===================== -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="14"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ===== LEFT: การเชื่อมต่อ Server (API + Kiosk URL) ===== -->
+            <Border Grid.Column="0" Style="{StaticResource CardStyle}" Padding="20" VerticalAlignment="Top">
+                <StackPanel>
+                    <!-- header with wifi icon -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <Border Width="34" Height="34" CornerRadius="9"
+                                Background="{StaticResource PrimaryTintBrush}" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE701;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                       Foreground="{StaticResource PrimaryBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="การเชื่อมต่อเซิร์ฟเวอร์" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextBrush}"
+                                   VerticalAlignment="Center" Margin="11,0,0,0"/>
+                    </StackPanel>
+                    <TextBlock Margin="0,2,0,16" Foreground="{StaticResource MutedBrush}" FontSize="12"
+                               TextWrapping="Wrap">
+                        <Run Text="ไฟล์ตั้งค่า: "/><Run Text="{Binding ConfigPath, Mode=OneWay}"/>
+                    </TextBlock>
+
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="API BaseUrl" VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextSecondBrush}"/>
+                        <TextBox Grid.Column="1"
+                                 Style="{StaticResource InputTextBoxStyle}"
+                                 Text="{Binding ApiBaseUrl, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="AdminKey" VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextSecondBrush}"/>
+                        <Border Grid.Column="1" CornerRadius="10" Height="40"
+                                Background="{StaticResource SurfaceBrush}"
+                                BorderBrush="{StaticResource InputBorderBrush}" BorderThickness="1.5">
+                            <PasswordBox x:Name="PwdAdminKey"
+                                         BorderThickness="0" Background="Transparent"
+                                         VerticalContentAlignment="Center" Padding="13,0"
+                                         FontFamily="{StaticResource AppFontFamily}" FontSize="14"/>
+                        </Border>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="ทดสอบเชื่อมต่อ" Style="{StaticResource SecondaryButtonStyle}"
+                                Click="BtnTest_Click"/>
+                        <Button Content="บันทึก" Style="{StaticResource PrimaryButtonStyle}"
+                                Margin="10,0,0,0" Click="BtnSave_Click"/>
+                    </StackPanel>
+
+                    <!-- divider -->
+                    <Border Height="1" Background="{StaticResource BorderBrush}" Margin="0,18,0,16"/>
+
+                    <!-- Kiosk URL sub-section -->
+                    <TextBlock Text="URL สำหรับจอ Kiosk (กรณีเชื่อมอัตโนมัติไม่ได้)"
+                               FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+                    <TextBlock Text="{Binding KioskHint}" Foreground="{StaticResource TextSecondBrush}"
+                               TextWrapping="Wrap" Margin="0,4,0,12" FontSize="12"/>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <ComboBox Grid.Column="0" Height="40" VerticalContentAlignment="Center"
+                                  FontFamily="{StaticResource AppFontFamily}" FontSize="14" Padding="10,0"
+                                  ItemsSource="{Binding KioskUrls}"
+                                  SelectedItem="{Binding SelectedKioskUrl}"/>
+
+                        <Button Grid.Column="1" Content="คัดลอก" Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="10,0,0,0" Click="BtnCopyKioskUrl_Click"/>
+                        <Button Grid.Column="2" Content="รีเฟรช IP" Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="10,0,0,0" Click="BtnRefreshIps_Click"/>
+                    </Grid>
+
+                    <TextBlock Foreground="{StaticResource MutedBrush}" FontSize="11"
+                               Margin="0,12,0,0" TextWrapping="Wrap"
+                               Text="* หมายเหตุ: ถ้าจะให้จอ Kiosk เข้าได้ผ่าน IP นี้ ต้องรัน API Server แบบฟังทุก IP (เช่น --urls http://0.0.0.0:5269) และพอร์ต 5269 ต้องไม่ถูกบล็อกโดย Firewall"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ===== RIGHT: ลิขสิทธิ์ (License) ===== -->
+            <Border Grid.Column="2" Style="{StaticResource CardStyle}" Padding="20" VerticalAlignment="Top">
+                <StackPanel>
+                    <!-- header with key icon -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <Border Width="34" Height="34" CornerRadius="9"
+                                Background="{StaticResource SuccessTintBrush}" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE192;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                       Foreground="{StaticResource SuccessTextBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="ลิขสิทธิ์ (License)" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextBrush}"
+                                   VerticalAlignment="Center" Margin="11,0,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <TextBlock Text="สถานะ" Width="110" VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextSecondBrush}"/>
+                        <Border x:Name="LicenseStatusPill" CornerRadius="8" Padding="10,3"
+                                Background="{StaticResource PanelBrush}">
+                            <TextBlock x:Name="TxtLicenseStatus" Text="กำลังตรวจสอบ..."
+                                       FontWeight="SemiBold" FontSize="12"
+                                       Foreground="{StaticResource TextSecondBrush}"/>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <TextBlock Text="Machine ID" Width="110" VerticalAlignment="Top"
+                                   Foreground="{StaticResource TextSecondBrush}"/>
+                        <TextBlock x:Name="TxtMachineId" Text="-" Width="240"
+                                   FontFamily="{StaticResource MonoFontFamily}"
+                                   Foreground="{StaticResource TextBrush}" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <!-- B6: static package facts (license is perpetual / per-package; NOT a live counter) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <TextBlock Text="วันหมดอายุ" Width="110" VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextSecondBrush}"/>
+                        <TextBlock Text="ตลอดชีพ · ไม่มีวันหมดอายุ" VerticalAlignment="Center"
+                                   FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <TextBlock Text="รองรับ Kiosk" Width="110" VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextSecondBrush}"/>
+                        <TextBlock Text="รองรับสูงสุด 10 จอ" VerticalAlignment="Center"
+                                   FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+                    </StackPanel>
+
+                    <TextBlock x:Name="TxtLicenseMessage" Text="" Foreground="{StaticResource MutedBrush}"
+                               FontSize="12" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                    <Button Content="เปิดใช้งาน / เปลี่ยน Key" HorizontalAlignment="Left"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Click="BtnActivateLicense_Click"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ===================== Row 1: เกี่ยวกับระบบ ===================== -->
+        <Border Grid.Row="1" Style="{StaticResource CardStyle}" Padding="20" Margin="0,14,0,0">
             <StackPanel>
-                <TextBlock Text="การเชื่อมต่อเซิร์ฟเวอร์" FontSize="16" FontWeight="SemiBold"
-                           Foreground="{StaticResource TextBrush}"/>
-                <TextBlock Margin="0,2,0,16" Foreground="{StaticResource MutedBrush}" FontSize="12"
-                           TextWrapping="Wrap">
-                    <Run Text="ไฟล์ตั้งค่า: "/><Run Text="{Binding ConfigPath, Mode=OneWay}"/>
-                </TextBlock>
-
-                <Grid Margin="0,0,0,12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="150"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="API BaseUrl" VerticalAlignment="Center"
-                               Foreground="{StaticResource TextSecondBrush}"/>
-                    <TextBox Grid.Column="1"
-                             Style="{StaticResource InputTextBoxStyle}"
-                             Text="{Binding ApiBaseUrl, UpdateSourceTrigger=PropertyChanged}"/>
-                </Grid>
-
-                <Grid Margin="0,0,0,16">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="150"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="AdminKey" VerticalAlignment="Center"
-                               Foreground="{StaticResource TextSecondBrush}"/>
-                    <Border Grid.Column="1" CornerRadius="10" Height="40"
-                            Background="{StaticResource SurfaceBrush}"
-                            BorderBrush="{StaticResource InputBorderBrush}" BorderThickness="1.5">
-                        <PasswordBox x:Name="PwdAdminKey"
-                                     BorderThickness="0" Background="Transparent"
-                                     VerticalContentAlignment="Center" Padding="13,0"
-                                     FontFamily="{StaticResource AppFontFamily}" FontSize="14"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                    <Border Width="34" Height="34" CornerRadius="9"
+                            Background="{StaticResource PanelBrush}" VerticalAlignment="Center">
+                        <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                   Foreground="{StaticResource TextSecondBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
-                </Grid>
+                    <TextBlock Text="เกี่ยวกับระบบ" FontSize="16" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextBrush}"
+                               VerticalAlignment="Center" Margin="11,0,0,0"/>
+                </StackPanel>
 
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBlock Text="ชื่อระบบ" Width="110" Foreground="{StaticResource TextSecondBrush}"/>
+                    <TextBlock Text="ระบบผู้ดูแลห้องสมุด (Library Admin-PC)"
+                               FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBlock Text="เวอร์ชัน" Width="110" Foreground="{StaticResource TextSecondBrush}"/>
+                    <TextBlock x:Name="TxtAppVersion" Text="-"
+                               FontFamily="{StaticResource MonoFontFamily}"
+                               Foreground="{StaticResource TextBrush}"/>
+                </StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <Button Content="ทดสอบเชื่อมต่อ" Style="{StaticResource SecondaryButtonStyle}"
-                            Click="BtnTest_Click"/>
-                    <Button Content="บันทึก" Style="{StaticResource PrimaryButtonStyle}"
-                            Margin="10,0,0,0" Click="BtnSave_Click"/>
+                    <TextBlock Text="ผู้พัฒนา" Width="110" Foreground="{StaticResource TextSecondBrush}"/>
+                    <TextBlock Text="NTY MULTIMEDIA CO.,LTD."
+                               Foreground="{StaticResource TextSecondBrush}"/>
                 </StackPanel>
             </StackPanel>
         </Border>
 
-        <!-- ===================== Kiosk URL ===================== -->
-        <Border Grid.Row="1" Style="{StaticResource CardStyle}" Padding="20" Margin="0,0,0,14">
-            <StackPanel>
-                <TextBlock Text="URL สำหรับจอ Kiosk (กรณีเชื่อมอัตโนมัติไม่ได้)"
-                           FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
-                <TextBlock Text="{Binding KioskHint}" Foreground="{StaticResource TextSecondBrush}"
-                           TextWrapping="Wrap" Margin="0,4,0,14" FontSize="12"/>
-
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-
-                    <ComboBox Grid.Column="0" Height="40" VerticalContentAlignment="Center"
-                              FontFamily="{StaticResource AppFontFamily}" FontSize="14" Padding="10,0"
-                              ItemsSource="{Binding KioskUrls}"
-                              SelectedItem="{Binding SelectedKioskUrl}"/>
-
-                    <Button Grid.Column="1" Content="คัดลอก" Style="{StaticResource SecondaryButtonStyle}"
-                            Margin="10,0,0,0" Click="BtnCopyKioskUrl_Click"/>
-                    <Button Grid.Column="2" Content="รีเฟรช IP" Style="{StaticResource SecondaryButtonStyle}"
-                            Margin="10,0,0,0" Click="BtnRefreshIps_Click"/>
-                </Grid>
-
-                <TextBlock Foreground="{StaticResource MutedBrush}" FontSize="11"
-                           Margin="0,12,0,0" TextWrapping="Wrap"
-                           Text="* หมายเหตุ: ถ้าจะให้จอ Kiosk เข้าได้ผ่าน IP นี้ ต้องรัน API Server แบบฟังทุก IP (เช่น --urls http://0.0.0.0:5269) และพอร์ต 5269 ต้องไม่ถูกบล็อกโดย Firewall"/>
-            </StackPanel>
-        </Border>
-
-        <!-- ===================== ลิขสิทธิ์ ===================== -->
-        <Border Grid.Row="2" Style="{StaticResource CardStyle}" Padding="20" Margin="0,0,0,14">
-            <StackPanel>
-                <TextBlock Text="ลิขสิทธิ์ (License)" FontSize="16" FontWeight="SemiBold"
-                           Foreground="{StaticResource TextBrush}" Margin="0,0,0,14"/>
-
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0">
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                            <TextBlock Text="สถานะ:" Width="100" Foreground="{StaticResource TextSecondBrush}"/>
-                            <Border x:Name="LicenseStatusPill" CornerRadius="8" Padding="10,3"
-                                    Background="{StaticResource PanelBrush}">
-                                <TextBlock x:Name="TxtLicenseStatus" Text="กำลังตรวจสอบ..."
-                                           FontWeight="SemiBold" FontSize="12"
-                                           Foreground="{StaticResource TextSecondBrush}"/>
-                            </Border>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Text="Machine ID:" Width="100" Foreground="{StaticResource TextSecondBrush}"/>
-                            <TextBlock x:Name="TxtMachineId" Text="-"
-                                       FontFamily="{StaticResource MonoFontFamily}"
-                                       Foreground="{StaticResource TextBrush}" TextWrapping="Wrap"/>
-                        </StackPanel>
-                        <TextBlock x:Name="TxtLicenseMessage" Text="" Foreground="{StaticResource MutedBrush}"
-                                   FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"/>
-                    </StackPanel>
-
-                    <Button Grid.Column="1" Content="เปิดใช้งาน / เปลี่ยน Key"
-                            Style="{StaticResource PrimaryButtonStyle}" VerticalAlignment="Top"
-                            Click="BtnActivateLicense_Click"/>
-                </Grid>
-            </StackPanel>
-        </Border>
-
-        <!-- ===================== Messages ===================== -->
-        <StackPanel Grid.Row="3">
+        <!-- ===================== Row 2: Messages ===================== -->
+        <StackPanel Grid.Row="2" Margin="0,14,0,0">
             <Border Background="{StaticResource SuccessTintBrush}"
                     BorderBrush="{StaticResource SuccessBrush}" BorderThickness="1"
                     CornerRadius="10" Padding="12" Margin="0,0,0,10"

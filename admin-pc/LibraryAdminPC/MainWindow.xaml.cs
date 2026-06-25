@@ -96,7 +96,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         set { _isLicensed = value; OnPropertyChanged(); }
     }
 
-    private string _licenseBadgeText = "License: NOT ACTIVE";
+    private string _licenseBadgeText = "⚠ ยังไม่เปิดใช้งาน";
     public string LicenseBadgeText
     {
         get => _licenseBadgeText;
@@ -271,7 +271,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
             if (s.IsLicensed)
             {
-                LicenseBadgeText = "License: ACTIVE";
+                LicenseBadgeText = "✓ ลิขสิทธิ์ถูกต้อง";
                 LicenseBadgeToolTip = s.Message;
 
                 LicenseBadgeBackground = (Brush)new BrushConverter().ConvertFromString("#10B981")!;
@@ -280,7 +280,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             }
             else
             {
-                LicenseBadgeText = "License: NOT ACTIVE";
+                LicenseBadgeText = "⚠ ยังไม่เปิดใช้งาน";
                 LicenseBadgeToolTip = s.Message + "\nClick to enter Product Key";
 
                 LicenseBadgeBackground = (Brush)new BrushConverter().ConvertFromString("#EF4444")!;
@@ -293,7 +293,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             CrashLogger.Log("RefreshLicenseBadge failed", ex);
 
             IsLicensed = false;
-            LicenseBadgeText = "License: NOT ACTIVE";
+            LicenseBadgeText = "⚠ ตรวจสอบไม่ได้";
             LicenseBadgeToolTip = "License check error: " + ex.Message;
 
             LicenseBadgeBackground = (Brush)new BrushConverter().ConvertFromString("#EF4444")!;
@@ -304,6 +304,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private bool EnsureLicensedOrPrompt()
     {
+        // B6 perf fix: navigation must be instant (<100ms). The license state is
+        // already validated at startup (MainWindow_Loaded forces activation or shuts
+        // the app down) and is refreshed by the "รีเฟรชสถานะ" button, so trust the
+        // cached IsLicensed flag here instead of doing a BLOCKING synchronous
+        // GetStatus() HTTP round-trip on every page switch — that round-trip (5s
+        // timeout, on the UI thread) was the multi-second navigation delay.
+        if (IsLicensed) return true;
+
+        // Cached state says not-licensed (rare mid-session): re-verify against the
+        // server before prompting, exactly as before.
         RefreshLicenseBadge();
         if (IsLicensed) return true;
 

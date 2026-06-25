@@ -24,6 +24,22 @@ public partial class SettingsView : UserControl
         PwdAdminKey.PasswordChanged += (_, __) => _vm.AdminKey = PwdAdminKey.Password;
 
         RefreshLicenseInfo();
+        TxtAppVersion.Text = GetAppVersion();
+    }
+
+    // Additive (B6): "เกี่ยวกับระบบ" version, read from the running assembly — not
+    // hardcoded. Falls back to "-" if the version is unavailable.
+    private static string GetAppVersion()
+    {
+        try
+        {
+            var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            return v == null ? "-" : $"{v.Major}.{v.Minor}.{v.Build}";
+        }
+        catch
+        {
+            return "-";
+        }
     }
 
     // Additive (Task B / B5): license section. Reads LicenseService (unchanged
