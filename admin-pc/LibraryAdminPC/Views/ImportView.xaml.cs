@@ -22,6 +22,23 @@ public partial class ImportView : UserControl
         DataContext = _vm;
     }
 
+    // Additive (Task B / B4): drag-drop a file onto the drop zone -> set FilePath
+    // (reuses the existing upload flow via the อัปโหลด button; nothing existing changed).
+    private void DropZone_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop)
+            ? DragDropEffects.Copy
+            : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void DropZone_Drop(object sender, DragEventArgs e)
+    {
+        if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+        if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0)
+            _vm.FilePath = files[0];
+    }
+
     private void BtnBrowse_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new OpenFileDialog
