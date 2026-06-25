@@ -363,6 +363,55 @@ app.MapPost("/api/admin/books/clear", async (HttpRequest request, LibraryDbConte
 }).DisableAntiforgery();
 
 // ------------------------------------------------------
+// 📚 SINGLE-BOOK CRUD (C1) — additive, mirrors existing admin patterns:
+// IsAdmin auth, touch LastUpdated, broadcast SyncRequested, DisableAntiforgery.
+// (Add stays as import-file; only edit + delete are added here.)
+// ------------------------------------------------------
+app.MapPut("/api/admin/books/{regNo}", async (HttpRequest request, LibraryDbContext db, IConfiguration cfg, string regNo, BookDto body, IHubContext<LibraryHub> hub) =>
+{
+    if (!IsAdmin(request, cfg)) return Results.Unauthorized();
+    var key = (regNo ?? "").Trim();
+    if (string.IsNullOrWhiteSpace(key)) return Results.BadRequest(new { message = "regNo is required" });
+    if (body == null) return Results.BadRequest(new { message = "body is required" });
+
+    var book = await db.Books.FirstOrDefaultAsync(b => b.RegNo == key);
+    if (book == null) return Results.NotFound(new { message = "Book not found", regNo = key });
+
+    // แก้เฉพาะฟิลด์ที่อนุญาต; RegNo เป็น identity (มาจาก route) จึงไม่แก้
+    book.Title = (body.Title ?? "").Trim();
+    book.Category = (body.Category ?? "").Trim();
+    book.Publisher = (body.Publisher ?? "").Trim();
+    book.Shelf = (body.Shelf ?? "").Trim();
+
+    UpsertSetting(db, "LastUpdated", NowText());
+    await db.SaveChangesAsync(); await hub.Clients.All.SendAsync("SyncRequested");
+    return Results.Ok(new BookDto { RegNo = book.RegNo, Title = book.Title, Category = book.Category, Shelf = book.Shelf, Publisher = book.Publisher });
+}).DisableAntiforgery();
+
+app.MapDelete("/api/admin/books/{regNo}", async (HttpRequest request, LibraryDbContext db, IConfiguration cfg, string regNo, IHubContext<LibraryHub> hub) =>
+{
+    if (!IsAdmin(request, cfg)) return Results.Unauthorized();
+    var key = (regNo ?? "").Trim();
+    if (string.IsNullOrWhiteSpace(key)) return Results.BadRequest(new { message = "regNo is required" });
+
+    var book = await db.Books.FirstOrDefaultAsync(b => b.RegNo == key);
+    if (book == null) return Results.NotFound(new { message = "Book not found", regNo = key });
+
+    db.Books.Remove(book);
+
+    // กัน orphan cover: ลบไฟล์ปก + ล้าง hash ที่ผูกกับ regNo นี้ (พฤติกรรมเดียวกับ DELETE .../cover)
+    var coverKey = SafeKey(key);
+    foreach (var ext in new[] { ".png", ".jpg", ".jpeg", ".webp" }) {
+        var p = Path.Combine(CoversDir(), coverKey + ext); if (File.Exists(p)) File.Delete(p);
+    }
+    UpsertSetting(db, $"BookCover_{coverKey}_Sha256", "");
+
+    UpsertSetting(db, "LastUpdated", NowText());
+    await db.SaveChangesAsync(); await hub.Clients.All.SendAsync("SyncRequested");
+    return Results.Ok(new { deleted = 1, regNo = key });
+}).DisableAntiforgery();
+
+// ------------------------------------------------------
 // 🔥 BRANDING API (Logo & Background)
 // ------------------------------------------------------
 app.MapGet("/api/branding/meta", (LibraryDbContext db) =>
