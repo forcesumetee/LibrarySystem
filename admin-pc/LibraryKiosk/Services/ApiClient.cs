@@ -136,6 +136,26 @@ public sealed class ApiClient : IDisposable
         }
     }
 
+    /// <summary>GET /api/config — library display name. Null on failure.</summary>
+    public async Task<string?> GetDisplayNameAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            using var resp = await _http.GetAsync(BuildUrl("api/config"), ct).ConfigureAwait(false);
+            if (!resp.IsSuccessStatusCode) return null;
+            var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("displayName", out var dn))
+                return dn.GetString();
+            return null;
+        }
+        catch (Exception ex)
+        {
+            KioskLog.Warn($"GET /api/config failed: {ex.Message}");
+            return null;
+        }
+    }
+
     /// <summary>GET /api/branding/meta. Null on failure.</summary>
     public async Task<BrandingMetaDto?> GetBrandingMetaAsync(CancellationToken ct = default)
     {

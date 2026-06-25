@@ -36,6 +36,9 @@ public sealed class SyncService : IAsyncDisposable
     private BitmapSource? _logoCache;
     private BitmapSource? _bgCache;
 
+    // Book-cover cache (keyed by regNo); null value = "already tried, none found".
+    private readonly Dictionary<string, BitmapSource?> _coverCache = new();
+
     /// <summary>Raised on hub "SyncRequested" and on every (re)connect. May fire on a background thread.</summary>
     public event EventHandler? SyncTriggered;
 
@@ -59,9 +62,10 @@ public sealed class SyncService : IAsyncDisposable
         {
             _api.Dispose();
             _api = new ApiClient(newBaseUrl);
-            // New server => previous branding cache is meaningless.
+            // New server => previous branding/cover caches are meaningless.
             _logoSha = _bgSha = null;
             _logoCache = _bgCache = null;
+            _coverCache.Clear();
             _lifetime = new CancellationTokenSource();
         }
         KioskLog.Info($"SyncService rebound to {newBaseUrl}");
@@ -174,6 +178,7 @@ public sealed class SyncService : IAsyncDisposable
 
         var books = await api.GetBooksAsync(ct).ConfigureAwait(false);
         var categories = BuildCategories(books);
+        var displayName = await api.GetDisplayNameAsync(ct).ConfigureAwait(false);
         var (logo, background) = await LoadBrandingAsync(api, ct).ConfigureAwait(false);
 
         KioskLog.Info($"Sync ok: {books.Count} books, {categories.Count - 1} categories.");
@@ -182,6 +187,7 @@ public sealed class SyncService : IAsyncDisposable
         {
             State = ConnectionState.Connected,
             Meta = meta.Meta,
+            DisplayName = displayName,
             Books = books,
             Categories = categories,
             Logo = logo,
@@ -253,6 +259,27 @@ public sealed class SyncService : IAsyncDisposable
             return img;
         }
         return getCache(); // download failed; keep previous
+    }
+
+    /// <summary>
+    /// Fetch + decode a book cover (cache-busted, frozen), memoised per regNo so
+    /// re-filtering/re-syncing never refetches. Returns null when there is no cover.
+    /// </summary>
+    public async Task<BitmapSource?> LoadCoverAsync(string regNo)
+    {
+        if (string.IsNullOrWhiteSpace(regNo)) return null;
+
+        lock (_gate)
+        {
+            if (_coverCache.TryGetValue(regNo, out var cached)) return cached;
+        }
+
+        var api = _api;
+        var bytes = await api.GetImageBytesAsync($"api/books/{Uri.EscapeDataString(regNo)}/cover").ConfigureAwait(false);
+        var img = ImageLoader.FromBytes(bytes);
+
+        lock (_gate) { _coverCache[regNo] = img; }
+        return img;
     }
 
     public async ValueTask DisposeAsync()

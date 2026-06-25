@@ -9,6 +9,9 @@ public sealed class SyncSnapshot
 {
     public ConnectionState State { get; init; } = ConnectionState.Loading;
     public KioskMetaDto? Meta { get; init; }
+
+    /// <summary>Library display name from /api/config (null if unavailable).</summary>
+    public string? DisplayName { get; init; }
     public IReadOnlyList<BookDto> Books { get; init; } = new List<BookDto>();
 
     /// <summary>Distinct categories for chips, with "ทั้งหมด" prepended.</summary>
