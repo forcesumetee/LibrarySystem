@@ -25,11 +25,19 @@ public partial class HomeViewModel : ObservableObject
 
     private readonly SettingsService _settings;
     private readonly SyncService _sync;
+    private readonly PinService _pin;
     private readonly Dispatcher _dispatcher;
     private readonly SemaphoreSlim _syncGate = new(1, 1);
 
     private IReadOnlyList<BookCardViewModel> _allCards = new List<BookCardViewModel>();
     private int _coverGeneration;
+
+    // Raw branding straight from the server; the displayed Logo/Background images are
+    // derived from these via the local hide flags (settings can hide them on this kiosk).
+    private BitmapSource? _rawLogo;
+    private BitmapSource? _rawBackground;
+    private bool _hideLogo;
+    private bool _hideBackground;
 
     // ---- connection / meta ----
     [ObservableProperty] private ConnectionState _state = ConnectionState.Loading;
@@ -65,16 +73,67 @@ public partial class HomeViewModel : ObservableObject
     [ObservableProperty] private BookCardViewModel? _selectedBook;
     [ObservableProperty] private bool _isDetailOpen;
 
+    // ---- display (Phase 5) ----
+    /// <summary>Extra zoom applied outside the fit Viewbox (bound to a ScaleTransform).</summary>
+    [ObservableProperty] private double _uiScale = 1.0;
+
+    /// <summary>Last-applied display mode ("fullscreen"/"windowed"); the window reads this on load.</summary>
+    public string DisplayMode { get; private set; } = "fullscreen";
+
+    /// <summary>Raised when the admin changes the display mode; the window applies it.</summary>
+    public event Action<string>? DisplayModeChangeRequested;
+
+    // ---- admin settings overlay (Phase 5) ----
+    public SettingsViewModel Settings { get; }
+
     public HomeViewModel(SettingsService settings)
     {
         _settings = settings;
         _dispatcher = Application.Current.Dispatcher;
+        _pin = new PinService(settings);
 
         var cfg = _settings.Load();
         BaseUrl = cfg.BaseUrl;
+        _uiScale = Math.Clamp(cfg.UiScale, 0.8, 1.2);
+        DisplayMode = string.Equals(cfg.DisplayMode, "windowed", StringComparison.OrdinalIgnoreCase)
+            ? "windowed" : "fullscreen";
+        _hideLogo = cfg.HideLogo;
+        _hideBackground = cfg.HideBackground;
 
         _sync = new SyncService(cfg.BaseUrl);
         _sync.SyncTriggered += OnSyncTriggered;
+
+        Settings = new SettingsViewModel(
+            settings, _sync, _pin,
+            reloadAsync: RefreshAsync,
+            getStatus: () => (State, LastUpdated),
+            applyUiScale: v => UiScale = v,
+            applyDisplayMode: ApplyDisplayMode,
+            applyBranding: SetBrandingHidden,
+            getDisplayName: () => DisplayName,
+            getBrandingAvailable: () => (_rawLogo != null, _rawBackground != null));
+    }
+
+    private void ApplyDisplayMode(string mode)
+    {
+        DisplayMode = mode;
+        DisplayModeChangeRequested?.Invoke(mode);
+    }
+
+    /// <summary>Apply the local branding hide flags (called from the settings overlay).</summary>
+    public void SetBrandingHidden(bool hideLogo, bool hideBackground)
+    {
+        _hideLogo = hideLogo;
+        _hideBackground = hideBackground;
+        ApplyBrandingVisibility();
+    }
+
+    private void ApplyBrandingVisibility()
+    {
+        LogoImage = _hideLogo ? null : _rawLogo;
+        HasLogo = LogoImage != null;
+        BackgroundImage = _hideBackground ? null : _rawBackground;
+        HasBackground = BackgroundImage != null;
     }
 
     public async Task StartAsync()
@@ -123,10 +182,9 @@ public partial class HomeViewModel : ObservableObject
                 LastUpdated = snap.Meta.LastUpdated;
                 if (!string.IsNullOrWhiteSpace(snap.DisplayName)) DisplayName = snap.DisplayName!;
 
-                LogoImage = snap.Logo;
-                HasLogo = snap.Logo != null;
-                BackgroundImage = snap.Background;
-                HasBackground = snap.Background != null;
+                _rawLogo = snap.Logo;
+                _rawBackground = snap.Background;
+                ApplyBrandingVisibility();
 
                 _allCards = snap.Books.Select(b => new BookCardViewModel(b)).ToList();
                 RebuildCategories(snap.Categories);
@@ -240,9 +298,8 @@ public partial class HomeViewModel : ObservableObject
     [RelayCommand]
     private void CloseDetail() => IsDetailOpen = false;
 
-    // Phase 5 wires PIN/Settings here; no-op for now.
     [RelayCommand]
-    private void OpenSettings() { /* Phase 5: PIN + settings overlay */ }
+    private void OpenSettings() => Settings.Open();
 
     // ---------------- covers ----------------
 

@@ -28,5 +28,11 @@ public sealed class KioskSettings
     /// <summary>"fullscreen" (kiosk) or "windowed" (dev).</summary>
     public string DisplayMode { get; set; } = "fullscreen";
 
+    // --- Local branding overrides (Phase 5). Hide the server logo/background on
+    //     THIS kiosk only; the server is never touched. Mirrors the legacy Android
+    //     app's "remove image (this device)" option. ---
+    public bool HideLogo { get; set; }
+    public bool HideBackground { get; set; }
+
     public const string DefaultBaseUrl = "http://192.168.1.105:5269";
 }

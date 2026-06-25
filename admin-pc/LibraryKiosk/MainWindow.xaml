@@ -16,6 +16,8 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
         <conv:InverseBooleanToVisibilityConverter x:Key="InvBoolToVis" />
+        <conv:InverseBooleanConverter x:Key="InvBool" />
+        <conv:StringToVisibilityConverter x:Key="StrToVis" />
 
         <!-- Book card button -->
         <Style x:Key="CardButtonStyle" TargetType="Button">
@@ -114,13 +116,97 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Settings gear (three dots) — reused in header + stuck-state overlays -->
+        <Style x:Key="GearButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="88" />
+            <Setter Property="Height" Value="88" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="#26FFFFFF" CornerRadius="44" BorderBrush="#40FFFFFF" BorderThickness="1">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Ellipse Width="9" Height="9" Fill="White" Margin="0,0,0,5" />
+                                <Ellipse Width="9" Height="9" Fill="White" Margin="0,0,0,5" />
+                                <Ellipse Width="9" Height="9" Fill="White" />
+                            </StackPanel>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Numeric keypad button (PIN) -->
+        <Style x:Key="KeypadButtonStyle" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Margin" Value="10" />
+            <Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
+            <Setter Property="FontSize" Value="58" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="K" Background="{StaticResource SurfaceBrush}"
+                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="2"
+                                CornerRadius="24" MinWidth="150" MinHeight="120">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="K" Property="Background" Value="{StaticResource PrimaryTintBrush}" />
+                                <Setter TargetName="K" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="K" Property="Opacity" Value="0.4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Secondary (outline) pill button -->
+        <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="30" />
+            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="B" Background="{StaticResource SurfaceBrush}" CornerRadius="16"
+                                BorderBrush="{StaticResource PrimaryBrush}" BorderThickness="2"
+                                Padding="28,16" MinHeight="72">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="B" Property="Background" Value="{StaticResource PrimaryTintBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="B" Property="Opacity" Value="0.4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <!-- ============================================================
          Portrait kiosk shell — 1080 x 1920 design canvas in a Uniform
          Viewbox so it fits any portrait touch panel at 9:16.
          ============================================================ -->
-    <Viewbox Stretch="Uniform" StretchDirection="Both">
+    <Grid ClipToBounds="True" Background="Black">
+    <Viewbox Stretch="Uniform" StretchDirection="Both" RenderTransformOrigin="0.5,0.5">
+        <!-- UI Scale (settings): an extra zoom on top of the fit. Applied as a
+             RenderTransform (not LayoutTransform) so the Uniform Viewbox doesn't
+             simply re-fit it away; >1 zooms in (clipped), <1 letterboxes. 1.0 = no change. -->
+        <Viewbox.RenderTransform>
+            <ScaleTransform ScaleX="{Binding UiScale}" ScaleY="{Binding UiScale}" />
+        </Viewbox.RenderTransform>
         <Grid x:Name="DesignCanvas" Width="1080" Height="1920" Background="Black">
 
             <!-- Background: branding image over gradient fallback -->
@@ -163,21 +249,10 @@
                         </TextBlock>
                     </StackPanel>
 
-                    <!-- Settings (PIN gate in Phase 5) -->
-                    <Button Grid.Column="2" Width="88" Height="88" Cursor="Hand"
-                            Command="{Binding OpenSettingsCommand}" VerticalAlignment="Center">
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <Border Background="#26FFFFFF" CornerRadius="44" BorderBrush="#40FFFFFF" BorderThickness="1">
-                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                        <Ellipse Width="9" Height="9" Fill="White" Margin="0,0,0,5" />
-                                        <Ellipse Width="9" Height="9" Fill="White" Margin="0,0,0,5" />
-                                        <Ellipse Width="9" Height="9" Fill="White" />
-                                    </StackPanel>
-                                </Border>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
+                    <!-- Settings (opens PIN gate) -->
+                    <Button Grid.Column="2" Style="{StaticResource GearButtonStyle}"
+                            AutomationProperties.Name="ตั้งค่า" VerticalAlignment="Center"
+                            Command="{Binding OpenSettingsCommand}" />
                 </Grid>
 
                 <!-- Body panel -->
@@ -354,6 +429,10 @@
                     <Button Content="ลองอีกครั้ง" Command="{Binding RefreshCommand}"
                             Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Center" Margin="0,40,0,0" />
                 </StackPanel>
+                <!-- always reachable so an admin can fix the URL when stuck offline -->
+                <Button Style="{StaticResource GearButtonStyle}" AutomationProperties.Name="ตั้งค่า"
+                        Command="{Binding OpenSettingsCommand}"
+                        VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,48,48,0" />
             </Grid>
 
             <!-- ===================== UNLICENSED ===================== -->
@@ -367,6 +446,9 @@
                     <Button Content="ลองอีกครั้ง" Command="{Binding RefreshCommand}"
                             Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Center" Margin="0,40,0,0" />
                 </StackPanel>
+                <Button Style="{StaticResource GearButtonStyle}" AutomationProperties.Name="ตั้งค่า"
+                        Command="{Binding OpenSettingsCommand}"
+                        VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,48,48,0" />
             </Grid>
 
             <!-- ===================== DETAIL MODAL ===================== -->
@@ -467,6 +549,270 @@
                     </Button.Template>
                 </Button>
             </Grid>
+
+            <!-- ===================== ADMIN SETTINGS OVERLAY (Phase 5) ===================== -->
+            <Grid DataContext="{Binding Settings}"
+                  Visibility="{Binding IsOpen, Converter={StaticResource BoolToVis}}">
+                <Border Background="#D90B1426" />
+
+                <!-- PIN keypad (gate + change-PIN) -->
+                <Border Width="780" VerticalAlignment="Center" HorizontalAlignment="Center"
+                        Background="{StaticResource SurfaceBrush}" CornerRadius="40" Padding="56,48"
+                        Visibility="{Binding ShowKeypad, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <TextBlock Text="{Binding Pad.Title}" FontWeight="Bold" FontSize="48"
+                                   Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding Pad.Subtitle}" FontSize="30"
+                                   Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center"
+                                   Margin="0,10,0,0" TextAlignment="Center" />
+
+                        <!-- entered digits, masked -->
+                        <Border Background="{StaticResource PanelBrush}" CornerRadius="20" Height="96"
+                                Margin="0,30,0,0">
+                            <TextBlock Text="{Binding Pad.Mask}" FontFamily="{StaticResource MonoFontFamily}"
+                                       FontSize="56" Foreground="{StaticResource PrimaryBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+
+                        <!-- error / attempts -->
+                        <TextBlock Text="{Binding Pad.ErrorMessage}" Foreground="{StaticResource ErrorBrush}"
+                                   FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center"
+                                   Margin="0,18,0,0" TextAlignment="Center" TextWrapping="Wrap"
+                                   Visibility="{Binding Pad.HasError, Converter={StaticResource BoolToVis}}" />
+
+                        <!-- keypad -->
+                        <UniformGrid Columns="3" Margin="0,24,0,0">
+                            <Button Content="1" Style="{StaticResource KeypadButtonStyle}" Command="{Binding Pad.PressCommand}" CommandParameter="1" />
+                            <Button Content="2" Style="{StaticResource KeypadButtonStyle}" Command="{Binding Pad.PressCommand}" CommandParameter="2" />
+                            <Button Content="3" Style="{StaticResource KeypadButtonStyle}" Command="{Binding Pad.PressCommand}" CommandParameter="3" />
+                            <Button Content="4" Style="{StaticResource KeypadButtonStyle}" Command="{Binding Pad.PressCommand}" CommandParameter="4" />
+                            <Button Content="5" Style="{StaticResource KeypadButtonStyle}" Command="{Binding Pad.PressCommand}" CommandParameter="5" />
+                            <Button Content="6" Style="{StaticResource KeypadButtonStyle}" Command="{Binding Pad.PressCommand}" CommandParameter="6" />
+                            <Button Content="7" Style="{StaticResource KeypadButtonStyle}" Command="{Binding Pad.PressCommand}" CommandParameter="7" />
+                            <Button Content="8" Style="{StaticResource KeypadButtonStyle}" Command="{Binding Pad.PressCommand}" CommandParameter="8" />
+                            <Button Content="9" Style="{StaticResource KeypadButtonStyle}" Command="{Binding Pad.PressCommand}" CommandParameter="9" />
+                            <Button Content="ลบ" FontSize="34" Style="{StaticResource KeypadButtonStyle}" Command="{Binding Pad.BackspaceCommand}" />
+                            <Button Content="0" Style="{StaticResource KeypadButtonStyle}" Command="{Binding Pad.PressCommand}" CommandParameter="0" />
+                            <Button Content="ตกลง" FontSize="34" Style="{StaticResource KeypadButtonStyle}" Command="{Binding Pad.SubmitCommand}" />
+                        </UniformGrid>
+
+                        <!-- close (gate) / cancel (change-PIN) -->
+                        <Button Content="ปิด" Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding CloseCommand}" Margin="0,28,0,0"
+                                Visibility="{Binding ShowGate, Converter={StaticResource BoolToVis}}" />
+                        <Button Content="ยกเลิก" Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding CancelChangePinCommand}" Margin="0,28,0,0"
+                                Visibility="{Binding ShowChangePin, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- lock screen -->
+                <Border Width="780" VerticalAlignment="Center" HorizontalAlignment="Center"
+                        Background="{StaticResource SurfaceBrush}" CornerRadius="40" Padding="56,56"
+                        Visibility="{Binding IsLocked, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <Border Width="170" Height="170" CornerRadius="85" Background="#FBE9E7"
+                                HorizontalAlignment="Center">
+                            <Grid Width="78" Height="86" VerticalAlignment="Center">
+                                <Border Width="78" Height="56" VerticalAlignment="Bottom" CornerRadius="14"
+                                        Background="{StaticResource ErrorBrush}" />
+                                <Border Width="46" Height="46" VerticalAlignment="Top" HorizontalAlignment="Center"
+                                        BorderBrush="{StaticResource ErrorBrush}" BorderThickness="10,10,10,0"
+                                        CornerRadius="23,23,0,0" />
+                            </Grid>
+                        </Border>
+                        <TextBlock Text="PIN ถูกล็อก" FontWeight="Bold" FontSize="50"
+                                   Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center" Margin="0,30,0,0" />
+                        <TextBlock Text="{Binding LockMessage}" FontSize="32" Foreground="{StaticResource TextSecondBrush}"
+                                   HorizontalAlignment="Center" Margin="0,16,0,0" TextAlignment="Center" TextWrapping="Wrap" />
+                        <Button Content="ปิด" Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding CloseCommand}" Margin="0,36,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- settings panel -->
+                <Border Width="920" MaxHeight="1740" VerticalAlignment="Center" HorizontalAlignment="Center"
+                        Background="{StaticResource PanelBrush}" CornerRadius="40"
+                        Visibility="{Binding ShowPanel, Converter={StaticResource BoolToVis}}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <!-- panel header -->
+                        <Grid Grid.Row="0" Margin="48,40,40,8">
+                            <TextBlock Text="ตั้งค่า" FontWeight="Bold" FontSize="52"
+                                       Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" />
+                            <Button Width="76" Height="76" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                    Cursor="Hand" Command="{Binding CloseCommand}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="38"
+                                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="2">
+                                            <Grid Width="30" Height="30">
+                                                <Line X1="6" Y1="6" X2="24" Y2="24" Stroke="{StaticResource TextSecondBrush}" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                                <Line X1="24" Y1="6" X2="6" Y2="24" Stroke="{StaticResource TextSecondBrush}" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                            </Grid>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </Grid>
+
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled" Margin="0,8,0,0">
+                            <StackPanel Margin="44,8,44,44">
+
+                                <!-- การเชื่อมต่อ -->
+                                <Border Background="{StaticResource SurfaceBrush}" CornerRadius="28" Padding="36,32" Margin="0,0,0,28">
+                                    <StackPanel>
+                                        <TextBlock Text="การเชื่อมต่อ" FontWeight="Bold" FontSize="36"
+                                                   Foreground="{StaticResource PrimaryBrush}" />
+                                        <TextBlock Text="ที่อยู่เซิร์ฟเวอร์ (Base URL)" FontSize="28"
+                                                   Foreground="{StaticResource MutedBrush}" Margin="0,22,0,10" />
+                                        <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}"
+                                                BorderThickness="2" CornerRadius="18" Padding="22,0" Height="92">
+                                            <TextBox Text="{Binding BaseUrlInput, UpdateSourceTrigger=PropertyChanged}"
+                                                     FontFamily="{StaticResource MonoFontFamily}" FontSize="32"
+                                                     Foreground="{StaticResource TextBrush}" Background="Transparent"
+                                                     BorderThickness="0" VerticalContentAlignment="Center"
+                                                     CaretBrush="{StaticResource PrimaryBrush}" />
+                                        </Border>
+                                        <Grid Margin="0,22,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <Button Grid.Column="0" Content="บันทึก &amp; เชื่อมต่อ"
+                                                    Style="{StaticResource PrimaryButtonStyle}" FontSize="32"
+                                                    Command="{Binding SaveBaseUrlCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InvBool}}"
+                                                    HorizontalAlignment="Left" />
+                                            <Button Grid.Column="1" Content="ซิงก์ตอนนี้" Style="{StaticResource SecondaryButtonStyle}"
+                                                    Command="{Binding SyncNowCommand}" Margin="18,0,0,0" />
+                                        </Grid>
+                                        <TextBlock Text="{Binding ConnectionStatus}" FontSize="28"
+                                                   Foreground="{StaticResource TextSecondBrush}" Margin="0,18,0,0"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- การแสดงผล -->
+                                <Border Background="{StaticResource SurfaceBrush}" CornerRadius="28" Padding="36,32" Margin="0,0,0,28">
+                                    <StackPanel>
+                                        <TextBlock Text="การแสดงผล" FontWeight="Bold" FontSize="36"
+                                                   Foreground="{StaticResource PrimaryBrush}" />
+
+                                        <TextBlock Text="ชื่อระบบ (จากเซิร์ฟเวอร์)" FontSize="28"
+                                                   Foreground="{StaticResource MutedBrush}" Margin="0,22,0,6" />
+                                        <TextBlock Text="{Binding DisplayName}" FontSize="34" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextBrush}" TextWrapping="Wrap" />
+
+                                        <!-- logo -->
+                                        <Grid Margin="0,28,0,0">
+                                            <TextBlock Text="โลโก้ (เครื่องนี้)" FontSize="30" Foreground="{StaticResource TextBrush}"
+                                                       VerticalAlignment="Center" />
+                                            <Button HorizontalAlignment="Right" Content="ลบโลโก้" Style="{StaticResource SecondaryButtonStyle}"
+                                                    FontSize="28" Command="{Binding ToggleLogoCommand}" IsEnabled="{Binding LogoAvailable}"
+                                                    Visibility="{Binding HideLogo, Converter={StaticResource InvBoolToVis}}" />
+                                            <Button HorizontalAlignment="Right" Content="แสดงโลโก้" Style="{StaticResource SecondaryButtonStyle}"
+                                                    FontSize="28" Command="{Binding ToggleLogoCommand}"
+                                                    Visibility="{Binding HideLogo, Converter={StaticResource BoolToVis}}" />
+                                        </Grid>
+
+                                        <!-- background -->
+                                        <Grid Margin="0,18,0,0">
+                                            <TextBlock Text="ภาพพื้นหลัง (เครื่องนี้)" FontSize="30" Foreground="{StaticResource TextBrush}"
+                                                       VerticalAlignment="Center" />
+                                            <Button HorizontalAlignment="Right" Content="ลบพื้นหลัง" Style="{StaticResource SecondaryButtonStyle}"
+                                                    FontSize="28" Command="{Binding ToggleBackgroundCommand}" IsEnabled="{Binding BackgroundAvailable}"
+                                                    Visibility="{Binding HideBackground, Converter={StaticResource InvBoolToVis}}" />
+                                            <Button HorizontalAlignment="Right" Content="แสดงพื้นหลัง" Style="{StaticResource SecondaryButtonStyle}"
+                                                    FontSize="28" Command="{Binding ToggleBackgroundCommand}"
+                                                    Visibility="{Binding HideBackground, Converter={StaticResource BoolToVis}}" />
+                                        </Grid>
+
+                                        <!-- UI scale -->
+                                        <Grid Margin="0,30,0,0">
+                                            <TextBlock Text="ขนาดการแสดงผล" FontSize="30" Foreground="{StaticResource TextBrush}" />
+                                            <TextBlock HorizontalAlignment="Right" FontFamily="{StaticResource MonoFontFamily}"
+                                                       FontSize="30" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"
+                                                       Text="{Binding UiScalePercent, StringFormat={}{0:0}%}" />
+                                        </Grid>
+                                        <Slider Minimum="80" Maximum="120" Value="{Binding UiScalePercent}"
+                                                TickFrequency="5" IsSnapToTickEnabled="True" Margin="0,12,0,0" Height="48" />
+
+                                        <!-- display mode -->
+                                        <TextBlock Text="โหมดการแสดงผล" FontSize="30" Foreground="{StaticResource TextBrush}" Margin="0,24,0,12" />
+                                        <UniformGrid Columns="2">
+                                            <Button Content="เต็มจอ (Kiosk)" Command="{Binding SetFullscreenCommand}" Cursor="Hand" Margin="0,0,9,0">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="M" Background="{StaticResource SurfaceBrush}" CornerRadius="18"
+                                                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" MinHeight="80">
+                                                            <TextBlock x:Name="T" Text="{TemplateBinding Content}" FontSize="30" FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
+                                                                <Setter TargetName="M" Property="Background" Value="{StaticResource PrimaryBrush}" />
+                                                                <Setter TargetName="M" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                                                <Setter TargetName="T" Property="Foreground" Value="White" />
+                                                            </DataTrigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                            <Button Content="หน้าต่าง (ทดสอบ)" Command="{Binding SetWindowedCommand}" Cursor="Hand" Margin="9,0,0,0">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="M" Background="{StaticResource SurfaceBrush}" CornerRadius="18"
+                                                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" MinHeight="80">
+                                                            <TextBlock x:Name="T" Text="{TemplateBinding Content}" FontSize="30" FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <DataTrigger Binding="{Binding IsFullscreen}" Value="False">
+                                                                <Setter TargetName="M" Property="Background" Value="{StaticResource PrimaryBrush}" />
+                                                                <Setter TargetName="M" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                                                <Setter TargetName="T" Property="Foreground" Value="White" />
+                                                            </DataTrigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                        </UniformGrid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- ความปลอดภัย -->
+                                <Border Background="{StaticResource SurfaceBrush}" CornerRadius="28" Padding="36,32" Margin="0,0,0,28">
+                                    <StackPanel>
+                                        <TextBlock Text="ความปลอดภัย" FontWeight="Bold" FontSize="36"
+                                                   Foreground="{StaticResource PrimaryBrush}" />
+                                        <Button Content="เปลี่ยน PIN" Style="{StaticResource SecondaryButtonStyle}"
+                                                Command="{Binding StartChangePinCommand}" HorizontalAlignment="Left" Margin="0,22,0,0" />
+                                        <TextBlock Text="{Binding ChangePinResult}" FontSize="28" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource SuccessBrush}" Margin="0,16,0,0"
+                                                   Visibility="{Binding ChangePinResult, Converter={StaticResource StrToVis}}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- เกี่ยวกับ -->
+                                <Border Background="{StaticResource SurfaceBrush}" CornerRadius="28" Padding="36,32">
+                                    <StackPanel>
+                                        <TextBlock Text="เกี่ยวกับ" FontWeight="Bold" FontSize="36"
+                                                   Foreground="{StaticResource PrimaryBrush}" />
+                                        <TextBlock Text="{Binding AboutVersion}" FontSize="28"
+                                                   Foreground="{StaticResource TextSecondBrush}" Margin="0,16,0,0" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </Grid>
         </Grid>
     </Viewbox>
+    </Grid>
 </Window>

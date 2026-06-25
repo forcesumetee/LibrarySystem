@@ -72,9 +72,9 @@ public sealed class SyncService : IAsyncDisposable
         await ConnectAsync().ConfigureAwait(false);
     }
 
-    private async Task ConnectAsync()
+    private Task ConnectAsync()
     {
-        if (_disposed) return;
+        if (_disposed) return Task.CompletedTask;
 
         var url = $"{_api.BaseUrl}/hubs/library";
         var hub = new HubConnectionBuilder()
@@ -102,7 +102,13 @@ public sealed class SyncService : IAsyncDisposable
         hub.Closed += OnHubClosed;
 
         lock (_gate) { _hub = hub; }
-        await StartWithRetryAsync(hub).ConfigureAwait(false);
+
+        // Kick off the (possibly long, 5s-retrying) connect in the background so
+        // neither startup nor a settings rebind ever blocks on an unreachable
+        // server. The hub raises SyncTriggered once it connects; the caller's own
+        // HTTP sync (SyncNowAsync) surfaces the reachable/unreachable state meanwhile.
+        _ = StartWithRetryAsync(hub);
+        return Task.CompletedTask;
     }
 
     private async Task StartWithRetryAsync(HubConnection hub)
