@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Windows.Media;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
@@ -134,7 +137,144 @@ public class DashboardViewModel : INotifyPropertyChanged
         return raw;
     }
 
+    // ============================================================
+    // B7 ADDITIVE — redesigned dashboard extras (doughnut + custom
+    // legend + recent additions + top category). Nothing below mutates
+    // the existing LoadAsync()/CategorySeries/other members. A separate
+    // LoadExtrasAsync() (called from the View's Loaded handler, after the
+    // original LoadAsync) populates these. The chart re-binds to
+    // DonutSeries in XAML; CategorySeries stays as-is (still drives the
+    // "จำนวนหมวดหมู่" KPI via {Binding CategorySeries.Length}).
+    // ============================================================
+
+    // Shared palette so doughnut slices, legend swatches and recent-book
+    // category chips all use the same color per category index.
+    private static readonly string[] ChartPalette =
+        { "#1F5AA8", "#2E9C8E", "#E0922E", "#E2685A", "#5A5BB8", "#94A3B8" };
+
+    private ISeries[] _donutSeries = Array.Empty<ISeries>();
+    public ISeries[] DonutSeries
+    {
+        get => _donutSeries;
+        set { _donutSeries = value; OnPropertyChanged(); }
+    }
+
+    public ObservableCollection<CategoryLegendItem> CategoryLegend { get; } = new();
+    public ObservableCollection<RecentBookItem> RecentBooks { get; } = new();
+
+    private string _topCategoryName = "—";
+    public string TopCategoryName
+    {
+        get => _topCategoryName;
+        set { _topCategoryName = value; OnPropertyChanged(); }
+    }
+
+    private int _topCategoryCount;
+    public int TopCategoryCount
+    {
+        get => _topCategoryCount;
+        set { _topCategoryCount = value; OnPropertyChanged(); OnPropertyChanged(nameof(TopCategoryCountText)); }
+    }
+
+    // "2 เล่ม" when there is data; a friendly placeholder when the library is empty.
+    public string TopCategoryCountText => TopCategoryCount > 0 ? $"{TopCategoryCount} เล่ม" : "ยังไม่มีข้อมูล";
+
+    public async Task LoadExtrasAsync()
+    {
+        try
+        {
+            var cats = await _api.GetCategoryCountsAsync();
+            var total = cats.Sum(c => c.Count);
+
+            // Doughnut series (InnerRadius => doughnut), explicit per-category color.
+            DonutSeries = cats.Select((c, i) => (ISeries)new PieSeries<int>
+            {
+                Name = c.Category,
+                Values = new[] { c.Count },
+                InnerRadius = 78,
+                Fill = new SolidColorPaint(SKColor.Parse(ChartPalette[i % ChartPalette.Length]))
+            }).ToArray();
+
+            // Custom legend: color + name + count + percent (of the category total).
+            CategoryLegend.Clear();
+            for (int i = 0; i < cats.Count; i++)
+            {
+                var c = cats[i];
+                var pct = total > 0 ? (double)c.Count / total * 100.0 : 0;
+                CategoryLegend.Add(new CategoryLegendItem
+                {
+                    Name = string.IsNullOrWhiteSpace(c.Category) ? "(ไม่ระบุ)" : c.Category,
+                    Count = c.Count,
+                    PercentText = $"{pct:0}%",
+                    ColorBrush = MakeBrush(ChartPalette[i % ChartPalette.Length])
+                });
+            }
+
+            // Top category (max count). Empty library => placeholder, never error.
+            if (cats.Count > 0)
+            {
+                var top = cats.OrderByDescending(c => c.Count).First();
+                TopCategoryName = string.IsNullOrWhiteSpace(top.Category) ? "—" : top.Category;
+                TopCategoryCount = top.Count;
+            }
+            else
+            {
+                TopCategoryName = "—";
+                TopCategoryCount = 0;
+            }
+
+            // Recent additions: BookDto has no date field, so newest = tail of the
+            // server list (per spec). Reverse => newest first, take 5. Each book's
+            // chip color matches its category's doughnut/legend color.
+            var catColor = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < cats.Count; i++)
+                catColor[cats[i].Category ?? ""] = ChartPalette[i % ChartPalette.Length];
+
+            var books = await _api.GetBooksAsync();
+            RecentBooks.Clear();
+            foreach (var b in books.AsEnumerable().Reverse().Take(5))
+            {
+                var hex = catColor.TryGetValue((b.Category ?? "").Trim(), out var h) ? h : "#94A3B8";
+                RecentBooks.Add(new RecentBookItem
+                {
+                    Title = string.IsNullOrWhiteSpace(b.Title) ? "(ไม่มีชื่อ)" : b.Title,
+                    RegNo = b.RegNo,
+                    Category = b.Category,
+                    ColorBrush = MakeBrush(hex)
+                });
+            }
+        }
+        catch
+        {
+            // Extras are non-critical; the original LoadAsync owns the error banner.
+        }
+    }
+
+    private static Brush MakeBrush(string hex)
+    {
+        var b = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
+        b.Freeze();
+        return b;
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged([CallerMemberName] string? name = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+}
+
+// B7 ADDITIVE view-model item types (small, presentation-only).
+public sealed class CategoryLegendItem
+{
+    public string Name { get; set; } = "";
+    public int Count { get; set; }
+    public string PercentText { get; set; } = "";
+    public Brush ColorBrush { get; set; } = Brushes.Gray;
+}
+
+public sealed class RecentBookItem
+{
+    public string Title { get; set; } = "";
+    public string RegNo { get; set; } = "";
+    public string Category { get; set; } = "";
+    public Brush ColorBrush { get; set; } = Brushes.Gray;
 }

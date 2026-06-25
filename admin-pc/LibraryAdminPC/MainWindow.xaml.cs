@@ -380,7 +380,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        MainContent.Content = new DashboardView(_api);
+        var dash = new DashboardView(_api);
+        // B7 additive: the dashboard's "ดูทั้งหมด" link navigates to the Books page
+        // through the existing navigation method.
+        dash.ViewAllBooksRequested += (_, __) => NavigateToBooks();
+        MainContent.Content = dash;
     }
 
     private void NavigateToBooks()

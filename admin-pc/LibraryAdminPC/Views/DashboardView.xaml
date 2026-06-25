@@ -12,12 +12,13 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>  <!-- KPI cards -->
             <RowDefinition Height="Auto"/>  <!-- Error banner -->
-            <RowDefinition Height="*"/>     <!-- Chart -->
+            <RowDefinition Height="*"/>     <!-- Chart + recent -->
         </Grid.RowDefinitions>
 
-        <!-- ===================== KPI cards ===================== -->
+        <!-- ===================== KPI cards (5) ===================== -->
         <Grid Grid.Row="0" Margin="0,0,0,16">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -25,68 +26,87 @@
             </Grid.ColumnDefinitions>
 
             <!-- จำนวนหนังสือทั้งหมด (TotalBooks) -->
-            <Border Style="{StaticResource CardStyle}" Padding="18,16" Margin="0,0,8,0">
+            <Border Style="{StaticResource CardStyle}" Padding="16,14" Margin="0,0,6,0">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Border Width="34" Height="34" CornerRadius="9" Background="{StaticResource PrimaryTintBrush}">
-                            <Border Width="14" Height="14" CornerRadius="4" Background="{StaticResource PrimaryBrush}"
+                        <Border Width="32" Height="32" CornerRadius="9" Background="{StaticResource PrimaryTintBrush}">
+                            <Border Width="13" Height="13" CornerRadius="4" Background="{StaticResource PrimaryBrush}"
                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
-                        <TextBlock Text="จำนวนหนังสือทั้งหมด" VerticalAlignment="Center" Margin="10,0,0,0"
-                                   FontSize="13" Foreground="{StaticResource TextSecondBrush}"/>
+                        <TextBlock Text="หนังสือทั้งหมด" VerticalAlignment="Center" Margin="9,0,0,0"
+                                   FontSize="12" Foreground="{StaticResource TextSecondBrush}"/>
                     </StackPanel>
-                    <TextBlock Text="{Binding TotalBooks}" FontSize="32" FontWeight="Bold"
+                    <TextBlock Text="{Binding TotalBooks}" FontSize="28" FontWeight="Bold"
                                Foreground="{StaticResource TextBrush}" Margin="0,10,0,0"/>
                     <TextBlock Text="เล่ม" FontSize="12" Foreground="{StaticResource MutedBrush}"/>
                 </StackPanel>
             </Border>
 
             <!-- จำนวนหมวดหมู่ (= CategorySeries.Length, ผูกตรง ไม่แตะ VM) -->
-            <Border Grid.Column="1" Style="{StaticResource CardStyle}" Padding="18,16" Margin="8,0,8,0">
+            <Border Grid.Column="1" Style="{StaticResource CardStyle}" Padding="16,14" Margin="6,0,6,0">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Border Width="34" Height="34" CornerRadius="9" Background="{StaticResource SuccessTintBrush}">
-                            <Border Width="14" Height="14" CornerRadius="4" Background="{StaticResource SuccessBrush}"
+                        <Border Width="32" Height="32" CornerRadius="9" Background="{StaticResource SuccessTintBrush}">
+                            <Border Width="13" Height="13" CornerRadius="4" Background="{StaticResource SuccessBrush}"
                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
-                        <TextBlock Text="จำนวนหมวดหมู่" VerticalAlignment="Center" Margin="10,0,0,0"
-                                   FontSize="13" Foreground="{StaticResource TextSecondBrush}"/>
+                        <TextBlock Text="จำนวนหมวด" VerticalAlignment="Center" Margin="9,0,0,0"
+                                   FontSize="12" Foreground="{StaticResource TextSecondBrush}"/>
                     </StackPanel>
-                    <TextBlock Text="{Binding CategorySeries.Length}" FontSize="32" FontWeight="Bold"
+                    <TextBlock Text="{Binding CategorySeries.Length}" FontSize="28" FontWeight="Bold"
                                Foreground="{StaticResource TextBrush}" Margin="0,10,0,0"/>
                     <TextBlock Text="หมวด" FontSize="12" Foreground="{StaticResource MutedBrush}"/>
                 </StackPanel>
             </Border>
 
-            <!-- จอ Kiosk เชื่อมต่อ (mock literal "—/10" ตามกฎเหล็ก Task A) -->
-            <Border Grid.Column="2" Style="{StaticResource CardStyle}" Padding="18,16" Margin="8,0,8,0">
+            <!-- หมวดยอดนิยม (TopCategoryName + TopCategoryCountText, additive จาก category-counts) -->
+            <Border Grid.Column="2" Style="{StaticResource CardStyle}" Padding="16,14" Margin="6,0,6,0">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Border Width="34" Height="34" CornerRadius="9" Background="{StaticResource WarnTintBrush}">
-                            <Border Width="14" Height="14" CornerRadius="4" Background="{StaticResource AccentBrush}"
+                        <Border Width="32" Height="32" CornerRadius="9" Background="#EEE7FB">
+                            <Border Width="13" Height="13" CornerRadius="4" Background="#5A5BB8"
                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
-                        <TextBlock Text="จอ Kiosk เชื่อมต่อ" VerticalAlignment="Center" Margin="10,0,0,0"
-                                   FontSize="13" Foreground="{StaticResource TextSecondBrush}"/>
+                        <TextBlock Text="หมวดยอดนิยม" VerticalAlignment="Center" Margin="9,0,0,0"
+                                   FontSize="12" Foreground="{StaticResource TextSecondBrush}"/>
                     </StackPanel>
-                    <TextBlock Text="—/10" FontSize="32" FontWeight="Bold"
+                    <TextBlock Text="{Binding TopCategoryName}" FontSize="19" FontWeight="Bold"
+                               Foreground="{StaticResource TextBrush}" Margin="0,12,0,0"
+                               TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="48"/>
+                    <TextBlock Text="{Binding TopCategoryCountText}" FontSize="12"
+                               Foreground="{StaticResource MutedBrush}" Margin="0,2,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- จอ Kiosk เชื่อมต่อ (mock literal "—/10" ตามกฎเหล็ก Task A) -->
+            <Border Grid.Column="3" Style="{StaticResource CardStyle}" Padding="16,14" Margin="6,0,6,0">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="32" Height="32" CornerRadius="9" Background="{StaticResource WarnTintBrush}">
+                            <Border Width="13" Height="13" CornerRadius="4" Background="{StaticResource AccentBrush}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="จอ Kiosk เชื่อมต่อ" VerticalAlignment="Center" Margin="9,0,0,0"
+                                   FontSize="12" Foreground="{StaticResource TextSecondBrush}"/>
+                    </StackPanel>
+                    <TextBlock Text="—/10" FontSize="28" FontWeight="Bold"
                                Foreground="{StaticResource TextBrush}" Margin="0,10,0,0"/>
                     <TextBlock Text="รอฟีเจอร์ฝั่งเซิร์ฟเวอร์" FontSize="12" Foreground="{StaticResource MutedBrush}"/>
                 </StackPanel>
             </Border>
 
             <!-- อัปเดตล่าสุด (LastUpdated) -->
-            <Border Grid.Column="3" Style="{StaticResource CardStyle}" Padding="18,16" Margin="8,0,0,0">
+            <Border Grid.Column="4" Style="{StaticResource CardStyle}" Padding="16,14" Margin="6,0,0,0">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Border Width="34" Height="34" CornerRadius="9" Background="{StaticResource PanelBrush}">
-                            <Border Width="14" Height="14" CornerRadius="4" Background="{StaticResource MutedBrush}"
+                        <Border Width="32" Height="32" CornerRadius="9" Background="{StaticResource PanelBrush}">
+                            <Border Width="13" Height="13" CornerRadius="4" Background="{StaticResource MutedBrush}"
                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
-                        <TextBlock Text="อัปเดตล่าสุด" VerticalAlignment="Center" Margin="10,0,0,0"
-                                   FontSize="13" Foreground="{StaticResource TextSecondBrush}"/>
+                        <TextBlock Text="อัปเดตล่าสุด" VerticalAlignment="Center" Margin="9,0,0,0"
+                                   FontSize="12" Foreground="{StaticResource TextSecondBrush}"/>
                     </StackPanel>
-                    <TextBlock Text="{Binding LastUpdated}" FontSize="20" FontWeight="SemiBold"
+                    <TextBlock Text="{Binding LastUpdated}" FontSize="17" FontWeight="SemiBold"
                                Foreground="{StaticResource TextBrush}" Margin="0,12,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
@@ -104,40 +124,136 @@
             <TextBlock Text="{Binding Error}" Foreground="{StaticResource WarnTextBrush}" TextWrapping="Wrap"/>
         </Border>
 
-        <!-- ===================== Chart card ===================== -->
-        <Border Grid.Row="2" Style="{StaticResource CardStyle}" Padding="20">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+        <!-- ===================== Chart (left) + Recent (right) ===================== -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="1*" MinWidth="300"/>
+            </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Row="0" Margin="0,0,0,12">
-                    <TextBlock Text="สัดส่วนหนังสือตามหมวดหมู่" FontSize="16" FontWeight="SemiBold"
-                               Foreground="{StaticResource TextBrush}"/>
-                    <TextBlock Text="แบ่งตามจำนวนเล่มในแต่ละหมวด" FontSize="12"
-                               Foreground="{StaticResource TextSecondBrush}" Margin="0,2,0,0"/>
-                </StackPanel>
+            <!-- ===== Doughnut card ===== -->
+            <Border Grid.Column="0" Style="{StaticResource CardStyle}" Padding="20" Margin="0,0,8,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                <Grid Grid.Row="1">
-                    <!-- หมายเหตุ: ข้อความใน Tooltip/Legend ของ LiveChartsCore ใช้ SkiaSharp ต้องกำหนด Typeface เพื่อให้แสดงภาษาไทยได้ (กำหนดใน VM) -->
-                    <lvc:PieChart Series="{Binding CategorySeries}"
-                                  LegendPosition="Right"
-                                  LegendTextPaint="{Binding LegendTextPaint}"
-                                  TooltipTextPaint="{Binding TooltipTextPaint}" />
+                    <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                        <TextBlock Text="สัดส่วนหนังสือตามหมวดหมู่" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextBrush}"/>
+                        <TextBlock Text="แบ่งตามจำนวนเล่มในแต่ละหมวด" FontSize="12"
+                                   Foreground="{StaticResource TextSecondBrush}" Margin="0,2,0,0"/>
+                    </StackPanel>
 
-                    <!-- Loading overlay -->
-                    <Border Background="#CCFFFFFF"
-                            Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <ProgressBar Width="220" Height="6" IsIndeterminate="True"
-                                         Foreground="{StaticResource PrimaryBrush}"/>
-                            <TextBlock Text="กำลังโหลดข้อมูล..." Margin="0,10,0,0" HorizontalAlignment="Center"
+                    <!-- doughnut + center total overlay -->
+                    <Grid Grid.Row="1" MinHeight="240">
+                        <lvc:PieChart Series="{Binding DonutSeries}"
+                                      LegendPosition="Hidden"
+                                      TooltipTextPaint="{Binding TooltipTextPaint}" />
+
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    IsHitTestVisible="False">
+                            <TextBlock Text="{Binding TotalBooks}" FontSize="36" FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{StaticResource TextBrush}"/>
+                            <TextBlock Text="เล่มทั้งหมด" FontSize="12" HorizontalAlignment="Center"
                                        Foreground="{StaticResource TextSecondBrush}"/>
                         </StackPanel>
-                    </Border>
+
+                        <!-- Loading overlay -->
+                        <Border Background="#CCFFFFFF"
+                                Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ProgressBar Width="220" Height="6" IsIndeterminate="True"
+                                             Foreground="{StaticResource PrimaryBrush}"/>
+                                <TextBlock Text="กำลังโหลดข้อมูล..." Margin="0,10,0,0" HorizontalAlignment="Center"
+                                           Foreground="{StaticResource TextSecondBrush}"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- custom legend: color + name + count + % -->
+                    <ItemsControl Grid.Row="2" ItemsSource="{Binding CategoryLegend}" Margin="0,14,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,5,0,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Ellipse Width="11" Height="11" VerticalAlignment="Center"
+                                             Fill="{Binding ColorBrush}"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="9,0,0,0"
+                                               VerticalAlignment="Center" FontSize="13"
+                                               Foreground="{StaticResource TextBrush}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
+                                               Foreground="{StaticResource TextSecondBrush}">
+                                        <Run Text="{Binding Count, Mode=OneWay}"/><Run Text=" เล่ม · "/><Run Text="{Binding PercentText, Mode=OneWay}"/>
+                                    </TextBlock>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </Grid>
-            </Grid>
-        </Border>
+            </Border>
+
+            <!-- ===== Recent additions card ===== -->
+            <Border Grid.Column="1" Style="{StaticResource CardStyle}" Padding="20" Margin="8,0,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Margin="0,0,0,8">
+                        <TextBlock Text="เพิ่มเข้าระบบล่าสุด" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextBrush}"/>
+                        <TextBlock Text="หนังสือที่เพิ่งเพิ่มเข้าระบบ" FontSize="12"
+                                   Foreground="{StaticResource TextSecondBrush}" Margin="0,2,0,0"/>
+                    </StackPanel>
+
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding RecentBooks}" Margin="0,4,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,7,0,7">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- cover/category-color chip -->
+                                    <Border Width="38" Height="50" CornerRadius="7" Background="{Binding ColorBrush}">
+                                        <TextBlock Text="{Binding RegNo}" Foreground="White" FontSize="9"
+                                                   FontFamily="{StaticResource MonoFontFamily}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                                                   Margin="0,0,0,4" TextTrimming="CharacterEllipsis"/>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1" Margin="11,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextBrush}"
+                                                   TextWrapping="Wrap" MaxHeight="36" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock FontSize="11" Foreground="{StaticResource TextSecondBrush}"
+                                                   Margin="0,3,0,0" TextTrimming="CharacterEllipsis">
+                                            <Run Text="{Binding RegNo, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding Category, Mode=OneWay}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Button Grid.Row="2" Content="ดูทั้งหมดในหน้าจัดการหนังสือ →"
+                            Style="{StaticResource GhostButtonStyle}"
+                            HorizontalAlignment="Left" Margin="0,8,0,0"
+                            Click="BtnViewAllBooks_Click"/>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>
