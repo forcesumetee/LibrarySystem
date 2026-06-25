@@ -22,6 +22,72 @@ public partial class SettingsView : UserControl
         // sync password box
         PwdAdminKey.Password = _vm.AdminKey ?? string.Empty;
         PwdAdminKey.PasswordChanged += (_, __) => _vm.AdminKey = PwdAdminKey.Password;
+
+        RefreshLicenseInfo();
+    }
+
+    // Additive (Task B / B5): license section. Reads LicenseService (unchanged
+    // service) for status + Machine ID and lets the admin (re)activate via the
+    // existing LicenseKeyDialog. Per the design brief there is NO expiry date and
+    // NO device-count display (license is per-machine / perpetual).
+    private readonly LicenseService _licenseService = new();
+
+    private void RefreshLicenseInfo()
+    {
+        try
+        {
+            var s = _licenseService.GetStatus();
+
+            if (s.IsLicensed)
+            {
+                TxtLicenseStatus.Text = "เปิดใช้งานแล้ว (ACTIVE)";
+                TxtLicenseStatus.Foreground = (System.Windows.Media.Brush)FindResource("SuccessTextBrush");
+                LicenseStatusPill.Background = (System.Windows.Media.Brush)FindResource("SuccessTintBrush");
+            }
+            else
+            {
+                TxtLicenseStatus.Text = "ยังไม่เปิดใช้งาน";
+                TxtLicenseStatus.Foreground = (System.Windows.Media.Brush)FindResource("ErrorTextBrush");
+                LicenseStatusPill.Background = (System.Windows.Media.Brush)FindResource("ErrorTintBrush");
+            }
+
+            // LicenseStatus.MaskedKey carries the machine id from the server status.
+            TxtMachineId.Text = string.IsNullOrWhiteSpace(s.MaskedKey) ? "-" : s.MaskedKey;
+            TxtLicenseMessage.Text = s.Message ?? "";
+        }
+        catch (Exception ex)
+        {
+            TxtLicenseStatus.Text = "ตรวจสอบไม่ได้";
+            TxtLicenseMessage.Text = ex.Message;
+        }
+    }
+
+    private void BtnActivateLicense_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var dlg = new LicenseKeyDialog { Owner = Window.GetWindow(this) };
+            if (dlg.ShowDialog() != true) return;
+
+            var key = (dlg.ProductKey ?? "").Trim();
+            var result = _licenseService.TryActivate(key);
+
+            MessageBox.Show(
+                result.Message,
+                result.Success ? "Activated" : "Invalid Key",
+                MessageBoxButton.OK,
+                result.Success ? MessageBoxImage.Information : MessageBoxImage.Warning);
+
+            RefreshLicenseInfo();
+
+            // let MainWindow refresh its license badge (reuses the existing Saved hook).
+            if (result.Success)
+                Saved?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "License Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void BtnCopyKioskUrl_Click(object sender, RoutedEventArgs e)

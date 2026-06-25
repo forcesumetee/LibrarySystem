@@ -562,28 +562,21 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         PageTitle = "โลโก้ & พื้นหลัง";
         PageSubtitle = "จัดการโลโก้และภาพพื้นหลังของจอแสดงผล";
 
-        MainContent.Content = BuildBrandingPlaceholder();
-    }
-
-    private UIElement BuildBrandingPlaceholder()
-    {
-        return new Border
+        var view = new BrandingView(_configService);
+        view.Saved += async (_, __) =>
         {
-            Padding = new Thickness(16),
-            Child = new StackPanel
+            try
             {
-                Children =
-                {
-                    new TextBlock { Text = "โลโก้ & พื้นหลัง", FontSize = 20, FontWeight = FontWeights.SemiBold },
-                    new TextBlock
-                    {
-                        Text = "หน้านี้จะถูกออกแบบในเฟส B5 (ใช้การตั้งค่าโลโก้/พื้นหลังเดิมร่วมกับหน้าตั้งค่า)",
-                        Margin = new Thickness(0, 10, 0, 0),
-                        TextWrapping = TextWrapping.Wrap
-                    }
-                }
+                LoadConfig();
+                await RefreshStatusAsync();
+            }
+            catch (Exception ex)
+            {
+                CrashLogger.Log("BrandingView Saved handler failed", ex);
             }
         };
+
+        MainContent.Content = view;
     }
 
     // -------------------- Events (from MainWindow.xaml) --------------------

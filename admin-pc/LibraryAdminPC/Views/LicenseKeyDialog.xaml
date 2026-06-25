@@ -5,43 +5,47 @@
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         SizeToContent="WidthAndHeight"
-        Background="White"
-        FontFamily="Tahoma">
-    <Grid Margin="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        Background="{StaticResource BackgroundBrush}"
+        FontFamily="{StaticResource AppFontFamily}">
+    <Border Style="{StaticResource CardStyle}" Margin="20" Padding="26">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-        <TextBlock Text="กรอก Product Key"
-                   FontSize="18"
-                   FontWeight="SemiBold"/>
+            <StackPanel>
+                <TextBlock Text="กรอก Product Key" FontSize="18" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextBrush}"/>
+                <TextBlock Text="เปิดใช้งานโปรแกรมด้วยคีย์ที่ได้รับ (ผูกกับเครื่องนี้)"
+                           Foreground="{StaticResource TextSecondBrush}" FontSize="12" Margin="0,4,0,0"/>
+            </StackPanel>
 
-        <StackPanel Grid.Row="1" Margin="0,12,0,0">
-            <TextBlock Text="Example: LS-XXXX-XXXX-XXXX-XXXX"
-                       Foreground="#6B7280"
-                       Margin="0,0,0,6"/>
-            <TextBox x:Name="TxtKey"
-                     Height="34"
-                     MinWidth="420"
-                     VerticalContentAlignment="Center"/>
-        </StackPanel>
+            <StackPanel Grid.Row="1" Margin="0,18,0,0">
+                <TextBlock Text="Example: LS-XXXX-XXXX-XXXX-XXXX"
+                           Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,0,0,6"/>
+                <TextBox x:Name="TxtKey"
+                         Style="{StaticResource InputTextBoxStyle}"
+                         MinWidth="420"
+                         FontFamily="{StaticResource MonoFontFamily}"/>
+            </StackPanel>
 
-        <StackPanel Grid.Row="2"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Right"
-                    Margin="0,14,0,0">
-            <Button Content="ยกเลิก"
-                    Width="90"
-                    Height="34"
-                    Margin="0,0,10,0"
-                    IsCancel="True"/>
-            <Button Content="ยืนยัน"
-                    Width="90"
-                    Height="34"
-                    IsDefault="True"
-                    Click="BtnOk_Click"/>
-        </StackPanel>
-    </Grid>
+            <StackPanel Grid.Row="2"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Margin="0,22,0,0">
+                <Button Content="ยกเลิก"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        MinWidth="96"
+                        Margin="0,0,10,0"
+                        IsCancel="True"/>
+                <Button Content="ยืนยัน"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        MinWidth="96"
+                        IsDefault="True"
+                        Click="BtnOk_Click"/>
+            </StackPanel>
+        </Grid>
+    </Border>
 </Window>
