@@ -1,0 +1,58 @@
+<Window x:Class="LibraryKiosk.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Library Kiosk"
+        Height="960" Width="540"
+        MinHeight="480" MinWidth="270"
+        WindowStartupLocation="CenterScreen"
+        Background="Black"
+        FontFamily="{StaticResource AppFontFamily}"
+        TextOptions.TextFormattingMode="Ideal"
+        TextOptions.TextRenderingMode="ClearType"
+        UseLayoutRounding="True">
+
+    <!-- ============================================================
+         Kiosk shell. The whole UI is authored on a fixed portrait
+         design canvas of 1080 x 1920 logical units, then scaled to
+         fit the actual window/monitor with a Uniform Viewbox so the
+         layout looks identical on any portrait touch panel.
+         ============================================================ -->
+    <Viewbox Stretch="Uniform" StretchDirection="Both">
+        <Grid x:Name="DesignCanvas"
+              Width="1080" Height="1920"
+              Background="{StaticResource BrandBackgroundBrush}">
+
+            <!-- Phase 1 placeholder: proves canvas + Viewbox scaling + Anuphan font.
+                 Real screens land here from Phase 4 onward. -->
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="LibraryKiosk"
+                           FontWeight="Bold" FontSize="96"
+                           Foreground="{StaticResource BrandTextBrush}"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="กรอบจอแนวตั้ง 1080 × 1920 — เฟส 1 (โครงเปล่า)"
+                           FontWeight="Medium" FontSize="40"
+                           Foreground="{StaticResource BrandMutedBrush}"
+                           Margin="0,24,0,0"
+                           HorizontalAlignment="Center" />
+
+                <Border Background="{StaticResource BrandSurfaceBrush}"
+                        CornerRadius="24" Padding="48,36" Margin="0,80,0,0">
+                    <StackPanel>
+                        <TextBlock Text="ทดสอบฟอนต์ Anuphan สวัสดีครับ ABCxyz 0123"
+                                   FontWeight="Regular" FontSize="44"
+                                   Foreground="{StaticResource BrandTextBrush}" />
+                        <TextBlock Text="ทดสอบฟอนต์ Anuphan สวัสดีครับ ABCxyz 0123"
+                                   FontWeight="Medium" FontSize="44"
+                                   Foreground="{StaticResource BrandTextBrush}" Margin="0,12,0,0" />
+                        <TextBlock Text="ทดสอบฟอนต์ Anuphan สวัสดีครับ ABCxyz 0123"
+                                   FontWeight="SemiBold" FontSize="44"
+                                   Foreground="{StaticResource BrandTextBrush}" Margin="0,12,0,0" />
+                        <TextBlock Text="ทดสอบฟอนต์ Anuphan สวัสดีครับ ABCxyz 0123"
+                                   FontWeight="Bold" FontSize="44"
+                                   Foreground="{StaticResource BrandTextBrush}" Margin="0,12,0,0" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </Viewbox>
+</Window>

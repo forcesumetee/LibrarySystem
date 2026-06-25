@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>LibraryKiosk</RootNamespace>
+    <AssemblyName>LibraryKiosk</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <!-- Force XAML to compile (generate .g.cs), matching LibraryAdminPC convention -->
+  <ItemGroup>
+    <ApplicationDefinition Update="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+
+    <Page Update="**\*.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+
+  <!-- Bundle Anuphan (OFL) as embedded font resources -->
+  <ItemGroup>
+    <Resource Include="Assets\Fonts\Anuphan-Regular.ttf" />
+    <Resource Include="Assets\Fonts\Anuphan-Medium.ttf" />
+    <Resource Include="Assets\Fonts\Anuphan-SemiBold.ttf" />
+    <Resource Include="Assets\Fonts\Anuphan-Bold.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LibraryShared\LibraryShared.csproj" />
+  </ItemGroup>
+
+</Project>
