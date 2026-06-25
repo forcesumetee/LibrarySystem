@@ -2,76 +2,141 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
-             FontFamily="Tahoma">
+             FontFamily="{StaticResource AppFontFamily}">
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </UserControl.Resources>
 
-    <Grid Margin="12">
+    <Grid Margin="6">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>  <!-- KPI cards -->
+            <RowDefinition Height="Auto"/>  <!-- Error banner -->
+            <RowDefinition Height="*"/>     <!-- Chart -->
         </Grid.RowDefinitions>
 
-        <TextBlock Text="แดชบอร์ด"
-                   FontSize="20"
-                   FontWeight="SemiBold"
-                   Margin="0,0,0,10"/>
-
-        <!-- KPI -->
-        <Grid Grid.Row="1" Margin="0,0,0,10">
+        <!-- ===================== KPI cards ===================== -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <Border Background="#FFFFFF" CornerRadius="12" Padding="12" Margin="0,0,6,0">
+            <!-- จำนวนหนังสือทั้งหมด (TotalBooks) -->
+            <Border Style="{StaticResource CardStyle}" Padding="18,16" Margin="0,0,8,0">
                 <StackPanel>
-                    <TextBlock Text="จำนวนหนังสือทั้งหมด" Foreground="#666"/>
-                    <TextBlock Text="{Binding TotalBooks}" FontSize="28" FontWeight="Bold"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="34" Height="34" CornerRadius="9" Background="{StaticResource PrimaryTintBrush}">
+                            <Border Width="14" Height="14" CornerRadius="4" Background="{StaticResource PrimaryBrush}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="จำนวนหนังสือทั้งหมด" VerticalAlignment="Center" Margin="10,0,0,0"
+                                   FontSize="13" Foreground="{StaticResource TextSecondBrush}"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding TotalBooks}" FontSize="32" FontWeight="Bold"
+                               Foreground="{StaticResource TextBrush}" Margin="0,10,0,0"/>
+                    <TextBlock Text="เล่ม" FontSize="12" Foreground="{StaticResource MutedBrush}"/>
                 </StackPanel>
             </Border>
 
-            <Border Grid.Column="1" Background="#FFFFFF" CornerRadius="12" Padding="12" Margin="6,0,0,0">
+            <!-- จำนวนหมวดหมู่ (= CategorySeries.Length, ผูกตรง ไม่แตะ VM) -->
+            <Border Grid.Column="1" Style="{StaticResource CardStyle}" Padding="18,16" Margin="8,0,8,0">
                 <StackPanel>
-                    <TextBlock Text="อัปเดตล่าสุด" Foreground="#666"/>
-                    <TextBlock Text="{Binding LastUpdated}" FontSize="16" FontWeight="SemiBold"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="34" Height="34" CornerRadius="9" Background="{StaticResource SuccessTintBrush}">
+                            <Border Width="14" Height="14" CornerRadius="4" Background="{StaticResource SuccessBrush}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="จำนวนหมวดหมู่" VerticalAlignment="Center" Margin="10,0,0,0"
+                                   FontSize="13" Foreground="{StaticResource TextSecondBrush}"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding CategorySeries.Length}" FontSize="32" FontWeight="Bold"
+                               Foreground="{StaticResource TextBrush}" Margin="0,10,0,0"/>
+                    <TextBlock Text="หมวด" FontSize="12" Foreground="{StaticResource MutedBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- จอ Kiosk เชื่อมต่อ (mock literal "—/10" ตามกฎเหล็ก Task A) -->
+            <Border Grid.Column="2" Style="{StaticResource CardStyle}" Padding="18,16" Margin="8,0,8,0">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="34" Height="34" CornerRadius="9" Background="{StaticResource WarnTintBrush}">
+                            <Border Width="14" Height="14" CornerRadius="4" Background="{StaticResource AccentBrush}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="จอ Kiosk เชื่อมต่อ" VerticalAlignment="Center" Margin="10,0,0,0"
+                                   FontSize="13" Foreground="{StaticResource TextSecondBrush}"/>
+                    </StackPanel>
+                    <TextBlock Text="—/10" FontSize="32" FontWeight="Bold"
+                               Foreground="{StaticResource TextBrush}" Margin="0,10,0,0"/>
+                    <TextBlock Text="รอฟีเจอร์ฝั่งเซิร์ฟเวอร์" FontSize="12" Foreground="{StaticResource MutedBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- อัปเดตล่าสุด (LastUpdated) -->
+            <Border Grid.Column="3" Style="{StaticResource CardStyle}" Padding="18,16" Margin="8,0,0,0">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="34" Height="34" CornerRadius="9" Background="{StaticResource PanelBrush}">
+                            <Border Width="14" Height="14" CornerRadius="4" Background="{StaticResource MutedBrush}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="อัปเดตล่าสุด" VerticalAlignment="Center" Margin="10,0,0,0"
+                                   FontSize="13" Foreground="{StaticResource TextSecondBrush}"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding LastUpdated}" FontSize="20" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextBrush}" Margin="0,12,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
         </Grid>
 
-        <!-- Error Banner -->
-        <Border Grid.Row="2"
-                Background="#FFF7E6"
-                BorderBrush="#FFD08A"
+        <!-- ===================== Error banner ===================== -->
+        <Border Grid.Row="1"
+                Background="{StaticResource WarnTintBrush}"
+                BorderBrush="{StaticResource WarnBrush}"
                 BorderThickness="1"
                 CornerRadius="10"
-                Padding="10"
-                Margin="0,0,0,10"
+                Padding="14,11"
+                Margin="0,0,0,16"
                 Visibility="{Binding HasError, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <TextBlock Text="{Binding Error}" Foreground="#8A4B00" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding Error}" Foreground="{StaticResource WarnTextBrush}" TextWrapping="Wrap"/>
         </Border>
 
-        <!-- Chart -->
-        <Border Grid.Row="3" Background="#FFFFFF" CornerRadius="12" Padding="12">
+        <!-- ===================== Chart card ===================== -->
+        <Border Grid.Row="2" Style="{StaticResource CardStyle}" Padding="20">
             <Grid>
-                <!-- หมายเหตุ: ข้อความใน Tooltip/Legend ของ LiveChartsCore ใช้ SkiaSharp ต้องกำหนด Typeface เพื่อให้แสดงภาษาไทยได้ -->
-                <lvc:PieChart Series="{Binding CategorySeries}"
-                              LegendPosition="Right"
-                              LegendTextPaint="{Binding LegendTextPaint}"
-                              TooltipTextPaint="{Binding TooltipTextPaint}" />
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-                <!-- Loading overlay -->
-                <Border Background="#80FFFFFF"
-                        Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <ProgressBar Width="220" Height="6" IsIndeterminate="True"/>
-                        <TextBlock Text="กำลังโหลดข้อมูล..." Margin="0,10,0,0" HorizontalAlignment="Center"/>
-                    </StackPanel>
-                </Border>
+                <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                    <TextBlock Text="สัดส่วนหนังสือตามหมวดหมู่" FontSize="16" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextBrush}"/>
+                    <TextBlock Text="แบ่งตามจำนวนเล่มในแต่ละหมวด" FontSize="12"
+                               Foreground="{StaticResource TextSecondBrush}" Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <Grid Grid.Row="1">
+                    <!-- หมายเหตุ: ข้อความใน Tooltip/Legend ของ LiveChartsCore ใช้ SkiaSharp ต้องกำหนด Typeface เพื่อให้แสดงภาษาไทยได้ (กำหนดใน VM) -->
+                    <lvc:PieChart Series="{Binding CategorySeries}"
+                                  LegendPosition="Right"
+                                  LegendTextPaint="{Binding LegendTextPaint}"
+                                  TooltipTextPaint="{Binding TooltipTextPaint}" />
+
+                    <!-- Loading overlay -->
+                    <Border Background="#CCFFFFFF"
+                            Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <ProgressBar Width="220" Height="6" IsIndeterminate="True"
+                                         Foreground="{StaticResource PrimaryBrush}"/>
+                            <TextBlock Text="กำลังโหลดข้อมูล..." Margin="0,10,0,0" HorizontalAlignment="Center"
+                                       Foreground="{StaticResource TextSecondBrush}"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
             </Grid>
         </Border>
     </Grid>
