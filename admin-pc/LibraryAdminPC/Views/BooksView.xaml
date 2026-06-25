@@ -4,92 +4,158 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
+             FontFamily="{StaticResource AppFontFamily}"
              d:DesignHeight="600" d:DesignWidth="1000">
 
-    <Grid Margin="14">
+    <Grid Margin="6">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="320" />
+            <ColumnDefinition Width="336" />
         </Grid.ColumnDefinitions>
 
-        <!-- LEFT -->
-        <Grid Grid.Column="0">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="10"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
+        <!-- ===================== LEFT: search + table ===================== -->
+        <Border Grid.Column="0" Style="{StaticResource CardStyle}" Padding="18">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="14"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-            <!-- TOP BAR -->
-            <Grid Grid.Row="0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="160" />
-                    <ColumnDefinition Width="100" />
-                </Grid.ColumnDefinitions>
+                <!-- toolbar -->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="180" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
 
-                <TextBox x:Name="TxtSearch"
-                         Grid.Column="0"
-                         Height="34"
-                         VerticalContentAlignment="Center"
-                         Margin="0,0,8,0"
-                         TextChanged="TxtSearch_TextChanged"
-                         ToolTip="ค้นหา (รหัส/ชื่อ/หมวด/สำนักพิมพ์/ชั้น)"/>
+                    <TextBox x:Name="TxtSearch"
+                             Grid.Column="0"
+                             Style="{StaticResource InputTextBoxStyle}"
+                             Margin="0,0,8,0"
+                             TextChanged="TxtSearch_TextChanged"
+                             ToolTip="ค้นหา (รหัส/ชื่อ/หมวด/สำนักพิมพ์/ชั้น)"/>
 
-                <ComboBox x:Name="CmbCategory"
-                          Grid.Column="1"
-                          Height="34"
-                          Margin="0,0,8,0"
-                          SelectionChanged="CmbCategory_SelectionChanged"/>
+                    <ComboBox x:Name="CmbCategory"
+                              Grid.Column="1"
+                              Height="40"
+                              VerticalContentAlignment="Center"
+                              FontFamily="{StaticResource AppFontFamily}"
+                              FontSize="14"
+                              Padding="10,0"
+                              Margin="0,0,8,0"
+                              SelectionChanged="CmbCategory_SelectionChanged"/>
 
-                <Button x:Name="BtnRefresh"
-                        Grid.Column="2"
-                        Height="34"
-                        Content="รีเฟรช"
-                        Click="BtnRefresh_Click"/>
+                    <Button x:Name="BtnRefresh"
+                            Grid.Column="2"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            MinWidth="96"
+                            Content="รีเฟรช"
+                            Click="BtnRefresh_Click"/>
+                </Grid>
+
+                <!-- table -->
+                <DataGrid Grid.Row="2"
+                          x:Name="BooksGrid"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          SelectionMode="Single"
+                          SelectionChanged="BooksGrid_SelectionChanged"
+                          CanUserAddRows="False"
+                          HeadersVisibility="Column"
+                          GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="{StaticResource BorderBrush}"
+                          BorderThickness="0"
+                          Background="Transparent"
+                          RowBackground="{StaticResource SurfaceBrush}"
+                          AlternatingRowBackground="{StaticResource SurfaceAltBrush}"
+                          Foreground="{StaticResource TextBrush}"
+                          FontSize="13"
+                          RowHeight="40"
+                          ColumnHeaderHeight="40"
+                          SelectionUnit="FullRow"
+                          CanUserResizeRows="False">
+                    <DataGrid.Resources>
+                        <!-- header -->
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Background" Value="{StaticResource PanelBrush}"/>
+                            <Setter Property="Foreground" Value="{StaticResource TextSecondBrush}"/>
+                            <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <Setter Property="FontSize" Value="13"/>
+                            <Setter Property="Padding" Value="12,0"/>
+                            <Setter Property="VerticalContentAlignment" Value="Center"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                        </Style>
+                        <!-- cell -->
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Padding" Value="12,0"/>
+                            <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+                            <Setter Property="VerticalContentAlignment" Value="Center"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="DataGridCell">
+                                        <Border Background="{TemplateBinding Background}"
+                                                Padding="{TemplateBinding Padding}"
+                                                SnapsToDevicePixels="True">
+                                            <ContentPresenter VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource PrimaryTintBrush}"/>
+                                    <Setter Property="Foreground" Value="{StaticResource PrimaryDarkBrush}"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.Resources>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="รหัส" Binding="{Binding RegNo}" Width="84"/>
+                        <DataGridTextColumn Header="ชื่อหนังสือ" Binding="{Binding Title}" Width="*" MinWidth="160"/>
+                        <DataGridTextColumn Header="หมวดหมู่" Binding="{Binding Category}" Width="120"/>
+                        <DataGridTextColumn Header="สำนักพิมพ์" Binding="{Binding Publisher}" Width="130"/>
+                        <DataGridTextColumn Header="ชั้น" Binding="{Binding Shelf}" Width="72"/>
+                    </DataGrid.Columns>
+                </DataGrid>
             </Grid>
+        </Border>
 
-            <DataGrid Grid.Row="2"
-                      x:Name="BooksGrid"
-                      AutoGenerateColumns="False"
-                      IsReadOnly="True"
-                      SelectionMode="Single"
-                      SelectionChanged="BooksGrid_SelectionChanged"
-                      CanUserAddRows="False">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="รหัส" Binding="{Binding RegNo}" Width="100"/>
-                    <DataGridTextColumn Header="ชื่อหนังสือ" Binding="{Binding Title}" Width="*"/>
-                    <DataGridTextColumn Header="หมวดหมู่" Binding="{Binding Category}" Width="140"/>
-                    <DataGridTextColumn Header="สำนักพิมพ์" Binding="{Binding Publisher}" Width="160"/>
-                    <DataGridTextColumn Header="ชั้น" Binding="{Binding Shelf}" Width="110"/>
-                </DataGrid.Columns>
-            </DataGrid>
-        </Grid>
-
-        <!-- RIGHT cover panel (เหมือนเดิมของคุณ) -->
-        <Border Grid.Column="1" Margin="14,0,0,0"
-                Padding="12" CornerRadius="10"
-                Background="#FFF6F7F9" BorderBrush="#FFE5E7EB" BorderThickness="1">
+        <!-- ===================== RIGHT: cover panel ===================== -->
+        <Border Grid.Column="1" Margin="16,0,0,0" Style="{StaticResource CardStyle}" Padding="18">
             <StackPanel>
-                <TextBlock Text="รูปหน้าปก" FontSize="16" FontWeight="SemiBold"/>
-                <TextBlock x:Name="TxtSelectedReg" Margin="0,6,0,8" Foreground="#FF6B7280" Text="ยังไม่ได้เลือกหนังสือ"/>
+                <TextBlock Text="รูปหน้าปก" FontSize="16" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextBrush}"/>
+                <TextBlock x:Name="TxtSelectedReg" Margin="0,6,0,12"
+                           Foreground="{StaticResource TextSecondBrush}" Text="ยังไม่ได้เลือกหนังสือ"/>
 
-                <Border Height="220" CornerRadius="10" Background="White" BorderBrush="#FFE5E7EB" BorderThickness="1">
+                <Border Height="300" CornerRadius="12" Background="{StaticResource SurfaceAltBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" ClipToBounds="True">
                     <Grid>
                         <Image x:Name="ImgCover" Stretch="UniformToFill"/>
                         <TextBlock x:Name="TxtNoCover" Text="ยังไม่มีรูปปก"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Foreground="#FF9CA3AF"/>
+                                   Foreground="{StaticResource MutedBrush}"/>
                     </Grid>
                 </Border>
 
-                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                    <Button x:Name="BtnUploadCover" Content="เปลี่ยนรูปปก" Width="120" Click="BtnUploadCover_Click" IsEnabled="False"/>
-                    <Button x:Name="BtnDeleteCover" Content="ล้างรูปปก" Width="100" Margin="8,0,0,0" Click="BtnDeleteCover_Click" IsEnabled="False"/>
+                <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                    <Button x:Name="BtnUploadCover" Content="เปลี่ยนรูปปก"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Click="BtnUploadCover_Click" IsEnabled="False"/>
+                    <Button x:Name="BtnDeleteCover" Content="ล้างรูปปก"
+                            Style="{StaticResource DangerOutlineButtonStyle}"
+                            Margin="8,0,0,0" Click="BtnDeleteCover_Click" IsEnabled="False"/>
                 </StackPanel>
 
-                <TextBlock x:Name="TxtCoverStatus" Margin="0,10,0,0" Foreground="#FF6B7280" TextWrapping="Wrap"/>
-                <TextBlock Text="แสดงรูปปกจาก Server" Foreground="#FF6B7280" Margin="0,8,0,0"/>
+                <TextBlock x:Name="TxtCoverStatus" Margin="0,14,0,0"
+                           Foreground="{StaticResource TextSecondBrush}" TextWrapping="Wrap"/>
+                <TextBlock Text="แสดงรูปปกจาก Server" Foreground="{StaticResource MutedBrush}"
+                           FontSize="12" Margin="0,8,0,0"/>
             </StackPanel>
         </Border>
     </Grid>
