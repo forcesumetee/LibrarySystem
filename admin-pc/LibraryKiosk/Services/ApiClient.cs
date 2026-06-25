@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -7,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LibraryKiosk.Utils;
 using LibraryShared;
+using LibraryShared.Dtos;
 
 namespace LibraryKiosk.Services;
 
@@ -107,6 +109,71 @@ public sealed class ApiClient : IDisposable
         {
             KioskLog.Warn($"GET /api/meta connection failed: {ex.Message}");
             return MetaResult.Unreachable("เชื่อมต่อ Server ไม่ได้");
+        }
+    }
+
+    /// <summary>
+    /// GET /api/books with no filter (full catalogue). Filtering/search is done
+    /// client-side in later phases. Returns an empty list on any failure.
+    /// </summary>
+    public async Task<List<BookDto>> GetBooksAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            using var resp = await _http.GetAsync(BuildUrl("api/books"), ct).ConfigureAwait(false);
+            if (!resp.IsSuccessStatusCode)
+            {
+                KioskLog.Warn($"GET /api/books -> {(int)resp.StatusCode}.");
+                return new List<BookDto>();
+            }
+            var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            return JsonSerializer.Deserialize<List<BookDto>>(body, JsonOptions) ?? new List<BookDto>();
+        }
+        catch (Exception ex)
+        {
+            KioskLog.Warn($"GET /api/books failed: {ex.Message}");
+            return new List<BookDto>();
+        }
+    }
+
+    /// <summary>GET /api/branding/meta. Null on failure.</summary>
+    public async Task<BrandingMetaDto?> GetBrandingMetaAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            using var resp = await _http.GetAsync(BuildUrl("api/branding/meta"), ct).ConfigureAwait(false);
+            if (!resp.IsSuccessStatusCode) return null;
+            var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            return JsonSerializer.Deserialize<BrandingMetaDto>(body, JsonOptions);
+        }
+        catch (Exception ex)
+        {
+            KioskLog.Warn($"GET /api/branding/meta failed: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Download raw image bytes for a relative path (e.g. "api/branding/logo"),
+    /// always cache-busted. Returns null on 404 or any failure.
+    /// </summary>
+    public async Task<byte[]?> GetImageBytesAsync(string path, CancellationToken ct = default)
+    {
+        try
+        {
+            using var resp = await _http.GetAsync(WithCacheBuster(path), ct).ConfigureAwait(false);
+            if (resp.StatusCode == HttpStatusCode.NotFound) return null;
+            if (!resp.IsSuccessStatusCode)
+            {
+                KioskLog.Warn($"GET {path} -> {(int)resp.StatusCode}.");
+                return null;
+            }
+            return await resp.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            KioskLog.Warn($"GET {path} (image) failed: {ex.Message}");
+            return null;
         }
     }
 
