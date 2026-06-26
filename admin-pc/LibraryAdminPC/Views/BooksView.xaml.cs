@@ -9,10 +9,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LibraryAdminPC.Models;
 using LibraryAdminPC.Services;
+using LibraryAdminPC.ViewModels;
 using Microsoft.Win32;
 
 namespace LibraryAdminPC.Views;
@@ -31,12 +33,20 @@ public partial class BooksView : UserControl
     // a single page sliced out of _filtered. Whenever _filtered changes (a filter
     // pass) we reset to page 1 and re-slice.
     private const int PageSize = 8;
-    private readonly ObservableCollection<BookDto> _paged = new();
+    private readonly ObservableCollection<BookRowVm> _paged = new();
     private int _currentPage = 1;
     private bool _repageScheduled;
 
     // C2 additive: pending cover for the "add book" form.
     private string? _newCoverPath;
+
+    // Cover-thumbnail cache (keyed by regNo). Value semantics:
+    //   key missing  -> not loaded yet
+    //   value == null -> server has no cover (404) -> show the category chip
+    //   value != null -> the loaded thumbnail
+    // Only the current page's rows are loaded (lazy), so 500+ books never load at once.
+    private readonly Dictionary<string, ImageSource?> _coverCache = new(StringComparer.OrdinalIgnoreCase);
+    private CancellationTokenSource? _coverCts;
 
     public BooksView(ApiClient api)
     {
@@ -173,7 +183,13 @@ public partial class BooksView : UserControl
         var end = Math.Min(start + PageSize, total);
 
         _paged.Clear();
-        for (int i = start; i < end; i++) _paged.Add(_filtered[i]);
+        var pageRows = new List<BookRowVm>();
+        for (int i = start; i < end; i++)
+        {
+            var row = new BookRowVm(_filtered[i]);
+            _paged.Add(row);
+            pageRows.Add(row);
+        }
 
         var from = total == 0 ? 0 : start + 1;
         TxtPageInfo.Text = $"แสดง {from}–{end} จาก {total}";
@@ -183,6 +199,59 @@ public partial class BooksView : UserControl
 
         // empty state when there are no results (layout stays stable via MinHeight)
         TxtEmpty.Visibility = total == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        // lazy-load only this page's covers (cancel any in-flight load from a prev page)
+        _coverCts?.Cancel();
+        _coverCts = new CancellationTokenSource();
+        _ = LoadCoversForPageAsync(pageRows, _coverCts.Token);
+    }
+
+    // Loads cover thumbnails for the rows currently on screen, sequentially (gentle on
+    // the server, UI stays responsive). Cached per regNo so flipping pages back/forth
+    // doesn't refetch. A null cache entry means "no cover" -> the category chip shows.
+    private async Task LoadCoversForPageAsync(List<BookRowVm> rows, CancellationToken ct)
+    {
+        foreach (var row in rows)
+        {
+            if (ct.IsCancellationRequested) return;
+            var regNo = row.RegNo;
+            if (string.IsNullOrWhiteSpace(regNo)) continue;
+
+            if (_coverCache.TryGetValue(regNo, out var cached))
+            {
+                row.Thumbnail = cached;   // may be null -> chip fallback
+                continue;
+            }
+
+            try
+            {
+                var bytes = await _api.GetBookCoverBytesAsync(regNo);
+                if (ct.IsCancellationRequested) return;
+
+                ImageSource? thumb = (bytes != null && bytes.Length > 0) ? BytesToThumbnail(bytes) : null;
+                _coverCache[regNo] = thumb;
+                row.Thumbnail = thumb;
+            }
+            catch
+            {
+                // leave uncached so a later visit can retry; the chip shows meanwhile
+            }
+        }
+    }
+
+    // Small, frozen thumbnail (OnLoad + DecodePixelWidth to keep memory low for many
+    // rows). No IgnoreImageCache with a StreamSource (that threw "Value cannot be null").
+    private static ImageSource BytesToThumbnail(byte[] bytes)
+    {
+        using var ms = new MemoryStream(bytes);
+        var img = new BitmapImage();
+        img.BeginInit();
+        img.CacheOption = BitmapCacheOption.OnLoad;
+        img.DecodePixelWidth = 64;
+        img.StreamSource = ms;
+        img.EndInit();
+        img.Freeze();
+        return img;
     }
 
     private void BtnPrevPage_Click(object sender, RoutedEventArgs e)
@@ -303,7 +372,8 @@ public partial class BooksView : UserControl
     // ---- per-row edit / delete (C1 endpoints) ----
     private async void BtnEditRow_Click(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.DataContext is not BookDto b) return;
+        if ((sender as FrameworkElement)?.DataContext is not BookRowVm row) return;
+        var b = row.Book;
 
         try
         {
@@ -318,6 +388,10 @@ public partial class BooksView : UserControl
                 TxtStatus.Text = $"แก้ไขแล้ว: {b.RegNo}";
             }
 
+            // cover changed in the dialog -> drop the cached thumbnail so it reloads fresh
+            if (dlg.CoverChanged)
+                _coverCache.Remove(b.RegNo);
+
             // refresh if the title was saved or the cover changed in the dialog
             if (saved || dlg.CoverChanged)
                 await ReloadAsync();
@@ -330,7 +404,8 @@ public partial class BooksView : UserControl
 
     private async void BtnDeleteRow_Click(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.DataContext is not BookDto b) return;
+        if ((sender as FrameworkElement)?.DataContext is not BookRowVm row) return;
+        var b = row.Book;
 
         if (!ConfirmDialog.Ask(Window.GetWindow(this), "ยืนยันการลบ",
                 $"ต้องการลบหนังสือ {b.RegNo} — {b.Title} ใช่หรือไม่? (รูปปกที่ผูกกับเล่มนี้จะถูกลบด้วย)",
@@ -341,6 +416,7 @@ public partial class BooksView : UserControl
         {
             TxtStatus.Text = "กำลังลบหนังสือ...";
             await _api.DeleteBookAsync(b.RegNo);
+            _coverCache.Remove(b.RegNo);   // drop cached thumbnail for the deleted book
             TxtStatus.Text = $"ลบแล้ว: {b.RegNo}";
             await ReloadAsync();
         }

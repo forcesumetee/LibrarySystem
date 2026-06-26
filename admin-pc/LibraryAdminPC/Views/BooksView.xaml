@@ -190,16 +190,20 @@
                         </Style>
                     </DataGrid.Resources>
                     <DataGrid.Columns>
-                        <!-- ปก: color chip by category -->
+                        <!-- ปก: real cover thumbnail when present, else category color chip -->
                         <DataGridTemplateColumn Header="ปก" Width="56">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Border Width="30" Height="40" CornerRadius="6"
-                                            HorizontalAlignment="Center"
+                                            HorizontalAlignment="Center" ClipToBounds="True"
                                             Background="{Binding Category, Converter={StaticResource CategoryToBrush}}">
-                                        <TextBlock Text="&#xE82D;" FontFamily="Segoe MDL2 Assets" FontSize="13"
-                                                   Foreground="White" Opacity="0.9"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <Grid>
+                                            <!-- fallback chip glyph (covered by the image when a cover exists) -->
+                                            <TextBlock Text="&#xE82D;" FontFamily="Segoe MDL2 Assets" FontSize="13"
+                                                       Foreground="White" Opacity="0.9"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"/>
+                                        </Grid>
                                     </Border>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
