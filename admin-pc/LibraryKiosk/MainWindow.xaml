@@ -338,6 +338,12 @@
         </Viewbox.RenderTransform>
         <Grid x:Name="DesignCanvas" Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}" Background="Black">
 
+            <!-- ============================================================
+                 PORTRAIT ROOT — the existing layout, wrapped unchanged. Shown
+                 when !IsLandscape. Landscape gets its own parallel root below.
+                 ============================================================ -->
+            <Grid x:Name="PortraitRoot" Visibility="{Binding IsLandscape, Converter={StaticResource InvBoolToVis}}">
+
             <!-- Background: branding image over gradient fallback -->
             <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
             <Image Source="{Binding BackgroundImage}" Stretch="UniformToFill"
@@ -1184,28 +1190,48 @@
                                         </UniformGrid>
 
                                         <!-- resolution (K2 item 4): portrait presets + custom W x H -->
-                                        <TextBlock Text="ความละเอียดหน้าจอ (แนวตั้ง)" FontSize="30"
+                                        <TextBlock Text="ความละเอียด / การวางแนวจอ" FontSize="30"
                                                    Foreground="{StaticResource TextBrush}" Margin="0,26,0,12" />
-                                        <Button Content="1080 × 1920 (มาตรฐานแนวตั้ง)" Command="{Binding SetPortraitPresetCommand}"
-                                                Cursor="Hand" HorizontalAlignment="Stretch">
-                                            <Button.Template>
-                                                <ControlTemplate TargetType="Button">
-                                                    <Border x:Name="M" Background="{StaticResource SurfaceBrush}" CornerRadius="18"
-                                                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" MinHeight="80">
-                                                        <TextBlock Text="{TemplateBinding Content}" FontSize="30" FontWeight="SemiBold"
-                                                                   Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                    </Border>
-                                                    <ControlTemplate.Triggers>
-                                                        <Trigger Property="IsPressed" Value="True">
-                                                            <Setter TargetName="M" Property="Background" Value="{StaticResource PrimaryTintBrush}" />
-                                                            <Setter TargetName="M" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
-                                                        </Trigger>
-                                                    </ControlTemplate.Triggers>
-                                                </ControlTemplate>
-                                            </Button.Template>
-                                        </Button>
+                                        <UniformGrid Columns="2">
+                                            <Button Content="1080 × 1920 (แนวตั้ง)" Command="{Binding SetPortraitPresetCommand}"
+                                                    Cursor="Hand" HorizontalAlignment="Stretch" Margin="0,0,7,0">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="M" Background="{StaticResource SurfaceBrush}" CornerRadius="18"
+                                                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" MinHeight="80">
+                                                            <TextBlock Text="{TemplateBinding Content}" FontSize="28" FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsPressed" Value="True">
+                                                                <Setter TargetName="M" Property="Background" Value="{StaticResource PrimaryTintBrush}" />
+                                                                <Setter TargetName="M" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                            <Button Content="1920 × 1080 (แนวนอน)" Command="{Binding SetLandscapePresetCommand}"
+                                                    Cursor="Hand" HorizontalAlignment="Stretch" Margin="7,0,0,0">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="M" Background="{StaticResource SurfaceBrush}" CornerRadius="18"
+                                                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" MinHeight="80">
+                                                            <TextBlock Text="{TemplateBinding Content}" FontSize="28" FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsPressed" Value="True">
+                                                                <Setter TargetName="M" Property="Background" Value="{StaticResource PrimaryTintBrush}" />
+                                                                <Setter TargetName="M" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                        </UniformGrid>
 
-                                        <TextBlock Text="หรือกำหนดเอง (กว้าง × สูง, แนวตั้งเท่านั้น)" FontSize="26"
+                                        <TextBlock Text="หรือกำหนดเอง (กว้าง × สูง)" FontSize="26"
                                                    Foreground="{StaticResource MutedBrush}" Margin="0,18,0,10" />
                                         <Grid>
                                             <Grid.ColumnDefinitions>
@@ -1450,6 +1476,30 @@
 
                     <TextBlock Text="แตะที่ใดก็ได้เพื่อเริ่มใช้งาน" HorizontalAlignment="Center"
                                FontSize="30" Foreground="#A6FFFFFF" Margin="0,56,0,0" />
+                </StackPanel>
+            </Grid>
+            </Grid>
+            <!-- /PortraitRoot -->
+
+            <!-- ============================================================
+                 LANDSCAPE ROOT — shown when IsLandscape. L1 = scaffold only
+                 (shared background + placeholder); L2-L4 fill the per-page
+                 landscape layouts. Shares all styles/templates with portrait.
+                 ============================================================ -->
+            <Grid x:Name="LandscapeRoot" Visibility="{Binding IsLandscape, Converter={StaticResource BoolToVis}}">
+                <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
+                <Image Source="{Binding BackgroundImage}" Stretch="UniformToFill"
+                       Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}" />
+                <Border Background="#33000000"
+                        Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}" />
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="โหมดแนวนอน (กำลังพัฒนา — L2-L4)" Foreground="#CCFFFFFF" FontSize="44"
+                               FontWeight="Bold" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding CanvasWidth, StringFormat=canvas {0} x }" Foreground="#80FFFFFF"
+                               FontSize="26" HorizontalAlignment="Center" Margin="0,12,0,0" />
+                    <!-- L1-temp: round-trip back to portrait (placeholder replaced in L4) -->
+                    <Button Content="← กลับแนวตั้ง" Command="{Binding Settings.SetPortraitPresetCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}" HorizontalAlignment="Center" Margin="0,40,0,0" />
                 </StackPanel>
             </Grid>
         </Grid>
