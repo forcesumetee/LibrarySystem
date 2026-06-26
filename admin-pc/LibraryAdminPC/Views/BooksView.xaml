@@ -11,6 +11,50 @@
     <UserControl.Resources>
         <conv:CategoryToBrushConverter x:Key="CategoryToBrush"/>
 
+        <!-- Search box with a REAL placeholder (hint text inside the template, shown only
+             when empty). The caret stays in PART_ContentHost so it is always at the start
+             when empty — the placeholder is never part of the Text. -->
+        <Style x:Key="SearchBoxStyle" TargetType="TextBox">
+            <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="CaretBrush" Value="{StaticResource PrimaryBrush}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="B" Background="{StaticResource SurfaceBrush}" CornerRadius="10"
+                                BorderBrush="{StaticResource InputBorderBrush}" BorderThickness="1.5"
+                                SnapsToDevicePixels="True">
+                            <Grid>
+                                <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="15"
+                                           Foreground="{StaticResource MutedBrush}" IsHitTestVisible="False"
+                                           VerticalAlignment="Center" HorizontalAlignment="Left" Margin="13,0,0,0"/>
+                                <TextBlock x:Name="Placeholder"
+                                           Text="ค้นหาจากชื่อ รหัส หมวดหมู่ หรือสำนักพิมพ์"
+                                           Foreground="{StaticResource MutedBrush}" FontSize="13"
+                                           IsHitTestVisible="False" VerticalAlignment="Center"
+                                           HorizontalAlignment="Left" Margin="38,0,12,0"
+                                           TextTrimming="CharacterEllipsis" Visibility="Collapsed"/>
+                                <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center"
+                                              Margin="38,0,12,0"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Text" Value="">
+                                <Setter TargetName="Placeholder" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="B" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- compact row action icon button (C2) -->
         <Style x:Key="RowIconBtn" TargetType="Button">
             <Setter Property="Cursor" Value="Hand"/>
@@ -60,32 +104,13 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <!-- search box: icon + placeholder overlay; TxtSearch + handler unchanged -->
-                    <Grid Grid.Column="0" Margin="0,0,8,0">
-                        <TextBox x:Name="TxtSearch"
-                                 Style="{StaticResource InputTextBoxStyle}"
-                                 Padding="38,0,12,0"
-                                 TextChanged="TxtSearch_TextChanged"
-                                 ToolTip="ค้นหา (รหัส/ชื่อ/หมวด/สำนักพิมพ์/ชั้น)"/>
-                        <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="15"
-                                   Foreground="{StaticResource MutedBrush}" IsHitTestVisible="False"
-                                   VerticalAlignment="Center" HorizontalAlignment="Left" Margin="13,0,0,0"/>
-                        <TextBlock Text="ค้นหาจากชื่อ รหัส หมวดหมู่ หรือสำนักพิมพ์"
-                                   Foreground="{StaticResource MutedBrush}" FontSize="13"
-                                   IsHitTestVisible="False" VerticalAlignment="Center"
-                                   HorizontalAlignment="Left" Margin="38,0,0,0">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Text, ElementName=TxtSearch}" Value="">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </Grid>
+                    <!-- search box with real in-template placeholder (TxtSearch + handler unchanged) -->
+                    <TextBox x:Name="TxtSearch"
+                             Grid.Column="0"
+                             Margin="0,0,8,0"
+                             Style="{StaticResource SearchBoxStyle}"
+                             TextChanged="TxtSearch_TextChanged"
+                             ToolTip="ค้นหา (รหัส/ชื่อ/หมวด/สำนักพิมพ์/ชั้น)"/>
 
                     <ComboBox x:Name="CmbCategory"
                               Grid.Column="1"
