@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.Collections.Concurrent;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using LibraryApiServer.Data;
@@ -19,7 +20,17 @@ builder.WebHost.UseUrls("http://0.0.0.0:5269");
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddSignalR(); 
+builder.Services.AddSignalR(options =>
+{
+    // K3: detect an ungracefully-killed kiosk faster than the 30s default. The kiosk
+    // client pings every ~8s (WithKeepAliveInterval), so a 20s server timeout keeps a
+    // safe >2x margin while staying light on bandwidth (a tiny ping per kiosk per 8s).
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(20);
+    options.KeepAliveInterval = TimeSpan.FromSeconds(8);
+});
+// K3: in-memory registry of connected kiosks (distinct kioskId), used by the hub
+// connect/disconnect hooks and the GET /api/kiosks/active endpoint.
+builder.Services.AddSingleton<KioskRegistry>();
 
 // ------------------------------------------------------
 // Storage root (ProgramData) + License state configs
@@ -534,6 +545,14 @@ app.MapDelete("/api/admin/books/{regNo}/cover", async (HttpRequest request, Libr
     return Results.Ok();
 }).DisableAntiforgery();
 
+// K3: live kiosk count for the admin dashboard. Public read (like /api/meta); cap is a
+// server constant, overridable via config Storage:MaxKiosks. Display-only — not enforced.
+app.MapGet("/api/kiosks/active", (KioskRegistry registry, IConfiguration cfg) =>
+{
+    var cap = cfg.GetValue<int?>("Storage:MaxKiosks") ?? 10;
+    return Results.Ok(new { active = registry.ActiveCount, cap });
+});
+
 app.MapGet("/", () => Results.Ok(new { message = "Library API Server running (Hardware-Bound OEM Mode)" }));
 
 app.Run();
@@ -623,6 +642,72 @@ public sealed class LicenseState {
 // ------------------------------------------------------
 // 📦 MODELS & TYPES
 // ------------------------------------------------------
-public class LibraryHub : Hub { }
+
+// K3: the same hub the kiosk already uses for SyncRequested now also counts kiosks.
+// A connection is a kiosk only when it joins with ?client=kiosk&kioskId=<id>; admin /
+// other clients send no such flag and are never counted. Counting is by DISTINCT
+// kioskId (not connectionId) so a reconnect that briefly holds two connections — or any
+// extra connection from one device — counts as one. Existing SyncRequested broadcast is
+// untouched (it goes through IHubContext, independent of these hooks).
+public class LibraryHub : Hub
+{
+    private readonly KioskRegistry _registry;
+    public LibraryHub(KioskRegistry registry) => _registry = registry;
+
+    public override Task OnConnectedAsync()
+    {
+        var http = Context.GetHttpContext();
+        var client = http?.Request.Query["client"].ToString();
+        if (string.Equals(client, "kiosk", StringComparison.OrdinalIgnoreCase))
+        {
+            var kioskId = http!.Request.Query["kioskId"].ToString();
+            if (string.IsNullOrWhiteSpace(kioskId)) kioskId = Context.ConnectionId; // fallback
+            _registry.Add(kioskId, Context.ConnectionId);
+        }
+        return base.OnConnectedAsync();
+    }
+
+    public override Task OnDisconnectedAsync(Exception? exception)
+    {
+        // Harmless no-op for non-kiosk connections (their connectionId isn't tracked).
+        _registry.Remove(Context.ConnectionId);
+        return base.OnDisconnectedAsync(exception);
+    }
+}
+
+// Thread-safe live count of connected kiosks, keyed by kioskId. Each kioskId holds the
+// set of its current connectionIds; the kioskId drops out only when its last connection
+// goes away — so a transient reconnect (new connectionId before the old one times out)
+// never changes the distinct count.
+public sealed class KioskRegistry
+{
+    private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, byte>> _kiosks = new();
+
+    public void Add(string kioskId, string connectionId)
+    {
+        var set = _kiosks.GetOrAdd(kioskId, _ => new ConcurrentDictionary<string, byte>());
+        set[connectionId] = 0;
+    }
+
+    public void Remove(string connectionId)
+    {
+        foreach (var kv in _kiosks)
+        {
+            if (kv.Value.TryRemove(connectionId, out _))
+            {
+                if (kv.Value.IsEmpty)
+                {
+                    _kiosks.TryRemove(kv.Key, out _);
+                    // Guard a race with a concurrent Add to the same set instance.
+                    if (!kv.Value.IsEmpty) _kiosks.TryAdd(kv.Key, kv.Value);
+                }
+                break;
+            }
+        }
+    }
+
+    /// <summary>Number of distinct connected kiosks.</summary>
+    public int ActiveCount => _kiosks.Count;
+}
 public sealed class ActivateLicenseDto { public string? key { get; set; } }
 public sealed class LicenseFile { public string? key { get; set; } public string? machineId { get; set; } public string? issuedAt { get; set; } public string? sig { get; set; } }
