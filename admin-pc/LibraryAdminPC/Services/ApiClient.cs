@@ -119,6 +119,22 @@ public class ApiClient
         return dto ?? throw new Exception("API returned empty meta response.");
     }
 
+    // K3: live kiosk count for the dashboard KPI. Returns (active, cap).
+    public async Task<(int active, int cap)> GetActiveKiosksAsync()
+    {
+        using var resp = await _http.GetAsync("api/kiosks/active");
+        var body = await resp.Content.ReadAsStringAsync();
+
+        if (!resp.IsSuccessStatusCode)
+            throw new Exception($"GetActiveKiosks failed: {(int)resp.StatusCode} {resp.StatusCode}\n{body}");
+
+        using var doc = JsonDocument.Parse(body);
+        var root = doc.RootElement;
+        var active = root.TryGetProperty("active", out var a) ? a.GetInt32() : 0;
+        var cap = root.TryGetProperty("cap", out var c) ? c.GetInt32() : 10;
+        return (active, cap);
+    }
+
     public async Task<List<CategoryCountDto>> GetCategoryCountsAsync()
     {
         using var resp = await _http.GetAsync("api/stats/category-counts");

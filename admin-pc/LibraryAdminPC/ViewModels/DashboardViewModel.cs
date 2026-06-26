@@ -257,6 +257,44 @@ public class DashboardViewModel : INotifyPropertyChanged
         return b;
     }
 
+    // ============================================================
+    // K3 ADDITIVE — live "จอ Kiosk เชื่อมต่อ" KPI (X/cap). Separate from
+    // LoadAsync/LoadExtrasAsync; the view loads this on open + on the existing
+    // refresh + on a light timer. -1 = unknown (server unreachable) => shows "—/cap".
+    // ============================================================
+
+    private int _activeKiosks = -1;
+    public int ActiveKiosks
+    {
+        get => _activeKiosks;
+        set { _activeKiosks = value; OnPropertyChanged(); OnPropertyChanged(nameof(KioskCountText)); }
+    }
+
+    private int _kioskCap = 10;
+    public int KioskCap
+    {
+        get => _kioskCap;
+        set { _kioskCap = value; OnPropertyChanged(); OnPropertyChanged(nameof(KioskCountText)); }
+    }
+
+    public string KioskCountText => ActiveKiosks >= 0 ? $"{ActiveKiosks}/{KioskCap}" : $"—/{KioskCap}";
+
+    /// <summary>Refresh just the kiosk count KPI. Never throws/Errors — on failure it
+    /// shows "—/cap" so the rest of the dashboard is unaffected.</summary>
+    public async Task LoadKioskCountAsync()
+    {
+        try
+        {
+            var (active, cap) = await _api.GetActiveKiosksAsync();
+            if (cap > 0) KioskCap = cap;
+            ActiveKiosks = active;
+        }
+        catch
+        {
+            ActiveKiosks = -1; // unknown -> "—/cap"
+        }
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged([CallerMemberName] string? name = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
