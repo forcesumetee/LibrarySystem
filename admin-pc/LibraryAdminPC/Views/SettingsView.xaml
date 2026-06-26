@@ -107,7 +107,7 @@
 
                     <TextBlock Foreground="{StaticResource MutedBrush}" FontSize="11"
                                Margin="0,12,0,0" TextWrapping="Wrap"
-                               Text="* หมายเหตุ: ถ้าจะให้จอ Kiosk เข้าได้ผ่าน IP นี้ ต้องรัน API Server แบบฟังทุก IP (เช่น --urls http://0.0.0.0:5269) และพอร์ต 5269 ต้องไม่ถูกบล็อกโดย Firewall"/>
+                               Text="* หมายเหตุ: ถ้าจะให้จอ Kiosk เข้าได้ผ่าน IP นี้ ต้องรัน API Server แบบฟังทุก IP (เช่น --urls http://0.0.0.0:45269) และพอร์ต 45269 ต้องไม่ถูกบล็อกโดย Firewall"/>
 
                     <!-- divider -->
                     <Border Height="1" Background="{StaticResource BorderBrush}" Margin="0,18,0,16"/>

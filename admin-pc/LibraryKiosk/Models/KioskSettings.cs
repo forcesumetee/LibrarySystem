@@ -64,5 +64,5 @@ public sealed class KioskSettings
     /// <summary>Idle seconds before the browse view resets for the next user (fullscreen only). 0 disables.</summary>
     public int IdleResetSeconds { get; set; } = 180;
 
-    public const string DefaultBaseUrl = "http://192.168.1.105:5269";
+    public const string DefaultBaseUrl = "http://192.168.1.105:45269";
 }

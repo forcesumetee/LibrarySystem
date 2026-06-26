@@ -2,7 +2,7 @@
 
 public class AppConfig
 {
-    public string ApiBaseUrl { get; set; } = "http://localhost:5269";
+    public string ApiBaseUrl { get; set; } = "http://localhost:45269";
     public string? AdminKey { get; set; } = "";
 
     // ✅ Branding (เก็บเป็นชื่อไฟล์ใน AppData/LibraryAdminPC/branding/)
