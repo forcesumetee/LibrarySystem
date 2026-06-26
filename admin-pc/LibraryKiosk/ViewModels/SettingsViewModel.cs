@@ -168,6 +168,17 @@ public partial class SettingsViewModel : ObservableObject
         ShowGate = ShowPanel = ShowChangePin = false;
     }
 
+    /// <summary>An admin "reset PIN" broadcast cleared the PIN + lockout underneath us
+    /// (<see cref="PinService.ResetToDefault"/>). If the overlay is currently sitting on the
+    /// gate or the lock screen, drop back to a fresh UNLOCKED gate so the operator can enter
+    /// the new default PIN right away. (If the panel is already open, leave it alone.)</summary>
+    public void HandleExternalPinReset()
+    {
+        _lockTimer.Stop();
+        if (IsOpen && (ShowGate || IsLocked))
+            EnterGate();
+    }
+
     // ---------------- gate ----------------
 
     private void EnterGate()

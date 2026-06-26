@@ -2007,6 +2007,33 @@
                         VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,48,48,0" />
             </Grid>
 
+            <!-- ===== SHARED OVERLAY: transient notice (e.g. admin PIN reset). Topmost so it
+                 shows above settings/lock; tap anywhere or the button to dismiss; auto-hides. -->
+            <Grid x:Name="NoticeOverlay" Visibility="{Binding IsNoticeVisible, Converter={StaticResource BoolToVis}}"
+                  Background="#990F1A33" MouseDown="Notice_Dismiss" TouchDown="Notice_Dismiss">
+                <Border Background="{StaticResource SurfaceBrush}" CornerRadius="40" Padding="64,56"
+                        HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="900">
+                    <StackPanel>
+                        <Border Width="150" Height="150" CornerRadius="75" Background="{StaticResource PrimaryTintBrush}"
+                                HorizontalAlignment="Center">
+                            <Viewbox Width="78" Height="78" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Canvas Width="24" Height="24">
+                                    <!-- key glyph: signals a PIN/security change -->
+                                    <Path Fill="{StaticResource PrimaryBrush}"
+                                          Data="M21 10h-8.35A5.99 5.99 0 0 0 7 6a6 6 0 0 0 0 12 5.99 5.99 0 0 0 5.65-4H13l2 2 2-2 2 2 3-3-1-3zM7 14a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" />
+                                </Canvas>
+                            </Viewbox>
+                        </Border>
+                        <TextBlock Text="PIN ถูกรีเซ็ตแล้ว" Foreground="{StaticResource TextBrush}" FontWeight="Bold"
+                                   FontSize="46" HorizontalAlignment="Center" Margin="0,32,0,0" />
+                        <TextBlock Text="{Binding NoticeText}" Foreground="{StaticResource TextSecondBrush}" FontSize="32"
+                                   TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" Margin="0,18,0,0" LineHeight="44" />
+                        <Button Content="เข้าใจแล้ว" Command="{Binding DismissNoticeCommand}"
+                                Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Center" Margin="0,40,0,0" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
         </Grid>
     </Viewbox>
     </Grid>

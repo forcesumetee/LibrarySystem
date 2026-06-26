@@ -150,6 +150,7 @@ public partial class HomeViewModel : ObservableObject
         _sync = new SyncService(cfg.BaseUrl, cfg.KioskId);
         _sync.SyncTriggered += OnSyncTriggered;
         _sync.HubConnectionChanged += OnHubConnectionChanged;
+        _sync.PinResetRequested += OnPinResetRequested;
 
         Settings = new SettingsViewModel(
             settings, _sync, _pin,
@@ -203,6 +204,49 @@ public partial class HomeViewModel : ObservableObject
             RebuildRows();                              // 3-col <-> 4-col chunking
             DisplayModeChangeRequested?.Invoke(DisplayMode); // re-size the window for the new aspect
         }
+    }
+
+    // ---------------- admin PIN reset (broadcast) ----------------
+
+    /// <summary>Transient notice overlay (shown after an admin PIN reset). Auto-hides.</summary>
+    [ObservableProperty] private bool _isNoticeVisible;
+    [ObservableProperty] private string _noticeText = "";
+    private DispatcherTimer? _noticeTimer;
+
+    private void OnPinResetRequested(object? sender, EventArgs e) => _ = OnUi(ApplyPinReset);
+
+    /// <summary>Admin broadcast a PIN reset: clear the local PIN back to default "1234",
+    /// drop any open lock/gate so the operator can use it immediately, and tell them.</summary>
+    private void ApplyPinReset()
+    {
+        _pin.ResetToDefault();
+        Settings.HandleExternalPinReset();   // unlock/refresh the gate if it's open
+        ShowNotice("PIN ถูกรีเซ็ตเป็น 1234 แล้ว\nกรุณาตั้ง PIN ใหม่ในหน้าตั้งค่า");
+    }
+
+    /// <summary>Show the transient notice overlay and (re)arm its auto-hide timer.</summary>
+    public void ShowNotice(string text)
+    {
+        NoticeText = text;
+        IsNoticeVisible = true;
+        _noticeTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(12) };
+        _noticeTimer.Tick -= OnNoticeTick;
+        _noticeTimer.Tick += OnNoticeTick;
+        _noticeTimer.Stop();
+        _noticeTimer.Start();
+    }
+
+    private void OnNoticeTick(object? sender, EventArgs e)
+    {
+        _noticeTimer?.Stop();
+        IsNoticeVisible = false;
+    }
+
+    [RelayCommand]
+    private void DismissNotice()
+    {
+        _noticeTimer?.Stop();
+        IsNoticeVisible = false;
     }
 
     private void OnHubConnectionChanged(object? sender, bool connected)
@@ -508,6 +552,7 @@ public partial class HomeViewModel : ObservableObject
     {
         _sync.SyncTriggered -= OnSyncTriggered;
         _sync.HubConnectionChanged -= OnHubConnectionChanged;
+        _sync.PinResetRequested -= OnPinResetRequested;
         await _sync.DisposeAsync();
     }
 }

@@ -288,6 +288,30 @@ public class ApiClient
     }
 
     // -----------------------------
+    // Kiosk maintenance — reset PIN on all connected kiosks (sends X-Admin-Key).
+    // Mirrors the existing admin-POST pattern; returns the number of kiosks the
+    // server pushed the reset broadcast to.
+    // -----------------------------
+    public async Task<int> ResetKioskPinAsync()
+    {
+        using var resp = await _http.PostAsync("api/admin/kiosks/reset-pin", content: null);
+        var body = await resp.Content.ReadAsStringAsync();
+
+        if (!resp.IsSuccessStatusCode)
+            throw new Exception($"ResetKioskPin failed: {(int)resp.StatusCode} {resp.StatusCode}\n{body}");
+
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("pushed", out var p) && p.TryGetInt32(out var n))
+                return n;
+        }
+        catch { }
+
+        return 0;
+    }
+
+    // -----------------------------
     // Branding (optional)
     // -----------------------------
     public async Task<BrandingMetaDto> GetBrandingMetaAsync()

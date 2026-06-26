@@ -188,4 +188,17 @@ public partial class SettingsView : UserControl
         _vm.AdminKey = PwdAdminKey.Password;
         await _vm.TestConnectionAsync();
     }
+
+    private async void BtnResetKioskPin_Click(object sender, RoutedEventArgs e)
+    {
+        // Pick up the latest AdminKey from the password box (same as Test/Save).
+        _vm.AdminKey = PwdAdminKey.Password;
+
+        // Confirm before firing — this resets the PIN on every connected kiosk.
+        if (!ConfirmDialog.Ask(Window.GetWindow(this), "รีเซ็ต PIN จอ Kiosk",
+                "รีเซ็ต PIN ของจอ Kiosk ทุกจอเป็น 1234?\nผู้ดูแลต้องตั้ง PIN ใหม่ที่จอ", "รีเซ็ต PIN"))
+            return;
+
+        await _vm.ResetKioskPinAsync();
+    }
 }

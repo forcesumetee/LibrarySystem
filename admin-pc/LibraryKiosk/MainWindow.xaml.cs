@@ -114,6 +114,9 @@ public partial class MainWindow : Window
     /// <summary>Tap anywhere on the Welcome backdrop → enter the (already reset) grid.</summary>
     private void Welcome_Dismiss(object sender, InputEventArgs e) => _vm.DismissWelcome();
 
+    /// <summary>Tap anywhere on the transient notice (e.g. admin PIN reset) → dismiss it.</summary>
+    private void Notice_Dismiss(object sender, InputEventArgs e) => _vm.DismissNoticeCommand.Execute(null);
+
     /// <summary>Tap the Welcome search box → enter the grid and focus the real search field
     /// so the user can type immediately.</summary>
     private void Welcome_TapSearch(object sender, InputEventArgs e)

@@ -179,6 +179,18 @@ static bool IsAdmin(HttpRequest req, IConfiguration cfg)
     return string.Equals(v.ToString().Trim(), adminKey, StringComparison.Ordinal);
 }
 
+// Strict variant for security-sensitive actions (e.g. reset kiosk PIN): unlike IsAdmin,
+// this NEVER allows through when no AdminKey is configured. A blank/unset server AdminKey
+// is treated as "deny" so an unconfigured deployment can't have its kiosk PINs reset by
+// any anonymous caller. The admin must configure a matching AdminKey on both ends.
+static bool IsAdminStrict(HttpRequest req, IConfiguration cfg)
+{
+    var adminKey = (cfg["AdminKey"] ?? "").Trim();
+    if (string.IsNullOrWhiteSpace(adminKey)) return false; // no key set => reject (no open door)
+    if (!req.Headers.TryGetValue("X-Admin-Key", out var v)) return false;
+    return string.Equals(v.ToString().Trim(), adminKey, StringComparison.Ordinal);
+}
+
 static string Sha256Hex(Stream s)
 {
     s.Position = 0;
@@ -552,6 +564,20 @@ app.MapGet("/api/kiosks/active", (KioskRegistry registry, IConfiguration cfg) =>
     var cap = cfg.GetValue<int?>("Storage:MaxKiosks") ?? 10;
     return Results.Ok(new { active = registry.ActiveCount, cap });
 });
+
+// Reset the admin PIN on every connected kiosk (the on-site operator forgot it). Pushes a
+// "PinResetRequested" broadcast — same fire-and-forget pattern as SyncRequested — and each
+// kiosk clears its local PIN back to the default "1234". The PIN lives only on the kiosk
+// (kiosk-settings.json); the server never stores/sends a PIN, so this only signals the reset.
+// SECURITY: IsAdminStrict — a configured, matching X-Admin-Key is REQUIRED (a blank server
+// AdminKey is rejected). Returns the number of kiosks the broadcast was pushed to.
+app.MapPost("/api/admin/kiosks/reset-pin", async (HttpRequest request, IConfiguration cfg, IHubContext<LibraryHub> hub, KioskRegistry registry) =>
+{
+    if (!IsAdminStrict(request, cfg)) return Results.Unauthorized();
+    var pushed = registry.ActiveCount;
+    await hub.Clients.All.SendAsync("PinResetRequested");
+    return Results.Ok(new { pushed });
+}).DisableAntiforgery();
 
 app.MapGet("/", () => Results.Ok(new { message = "Library API Server running (Hardware-Bound OEM Mode)" }));
 

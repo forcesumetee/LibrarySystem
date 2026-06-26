@@ -108,6 +108,17 @@
                     <TextBlock Foreground="{StaticResource MutedBrush}" FontSize="11"
                                Margin="0,12,0,0" TextWrapping="Wrap"
                                Text="* หมายเหตุ: ถ้าจะให้จอ Kiosk เข้าได้ผ่าน IP นี้ ต้องรัน API Server แบบฟังทุก IP (เช่น --urls http://0.0.0.0:5269) และพอร์ต 5269 ต้องไม่ถูกบล็อกโดย Firewall"/>
+
+                    <!-- divider -->
+                    <Border Height="1" Background="{StaticResource BorderBrush}" Margin="0,18,0,16"/>
+
+                    <!-- Kiosk maintenance: reset the kiosk admin PIN (when forgotten) -->
+                    <TextBlock Text="รีเซ็ต PIN จอ Kiosk"
+                               FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+                    <TextBlock Text="กรณีลืม PIN ของจอ Kiosk — สั่งรีเซ็ต PIN ของทุกจอที่เชื่อมต่ออยู่ให้กลับเป็น 1234 แล้วไปตั้ง PIN ใหม่ที่จอ (ต้องตั้ง AdminKey ให้ตรงกันทั้งสองฝั่ง)"
+                               Foreground="{StaticResource TextSecondBrush}" TextWrapping="Wrap" Margin="0,4,0,12" FontSize="12"/>
+                    <Button Content="รีเซ็ต PIN จอ Kiosk ทุกจอ" Style="{StaticResource SecondaryButtonStyle}"
+                            HorizontalAlignment="Left" Click="BtnResetKioskPin_Click"/>
                 </StackPanel>
             </Border>
 
