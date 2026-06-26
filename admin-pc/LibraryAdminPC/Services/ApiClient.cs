@@ -159,6 +159,58 @@ public class ApiClient
     }
 
     // -----------------------------
+    // C2 additive — single-book edit / delete (C1 endpoints) + in-memory CSV add.
+    // These are NEW methods; nothing existing is modified.
+    // -----------------------------
+    public async Task UpdateBookAsync(string regNo, BookDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(regNo))
+            throw new ArgumentException("regNo is empty.");
+
+        var payload = JsonSerializer.Serialize(dto);
+        using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+
+        using var resp = await _http.PutAsync($"api/admin/books/{Uri.EscapeDataString(regNo)}", content);
+        var body = await resp.Content.ReadAsStringAsync();
+
+        if (!resp.IsSuccessStatusCode)
+            throw new Exception($"UpdateBook failed: {(int)resp.StatusCode} {resp.StatusCode}\n{body}");
+    }
+
+    public async Task DeleteBookAsync(string regNo)
+    {
+        if (string.IsNullOrWhiteSpace(regNo))
+            throw new ArgumentException("regNo is empty.");
+
+        using var resp = await _http.DeleteAsync($"api/admin/books/{Uri.EscapeDataString(regNo)}");
+        var body = await resp.Content.ReadAsStringAsync();
+
+        if (!resp.IsSuccessStatusCode)
+            throw new Exception($"DeleteBook failed: {(int)resp.StatusCode} {resp.StatusCode}\n{body}");
+    }
+
+    // Add a book by posting a 1-row CSV (built in memory) to the existing
+    // /api/admin/import-file endpoint — no new server endpoint, no temp file.
+    public async Task<ImportCsvResultDto> ImportCsvTextAsync(string csvContent)
+    {
+        var bytes = new UTF8Encoding(true).GetBytes(csvContent ?? "");   // BOM; server importer detects it
+        using var fileContent = new ByteArrayContent(bytes);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/csv");
+
+        using var form = new MultipartFormDataContent();
+        form.Add(fileContent, "file", "addbook.csv");
+
+        using var resp = await _http.PostAsync("api/admin/import-file", form);
+        var body = await resp.Content.ReadAsStringAsync();
+
+        if (!resp.IsSuccessStatusCode)
+            throw new Exception($"Import (add) failed: {(int)resp.StatusCode} {resp.StatusCode}\n{body}");
+
+        var dto = JsonSerializer.Deserialize<ImportCsvResultDto>(body, _jsonOptions);
+        return dto ?? new ImportCsvResultDto { Imported = 0, Skipped = 0, Reason = "Empty response from server" };
+    }
+
+    // -----------------------------
     // Import via /api/admin/import-file
     // -----------------------------
     public Task<ImportCsvResultDto> ImportCsvAsync(string filePath)
