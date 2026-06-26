@@ -36,6 +36,8 @@ _installer_out/
 # Secrets
 appsettings.json
 appsettings.*.json
+# ...but keep the secret-free template so the required config shape is documented in git
+!appsettings.example.json
 
 # Licensing - DO NOT publish
 license_keys*.csv
