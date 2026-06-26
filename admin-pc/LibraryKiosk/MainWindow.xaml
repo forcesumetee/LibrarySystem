@@ -89,7 +89,7 @@
                                     <Grid Margin="0,14,0,0">
                                         <!-- category badge: tinted pill in the category colour -->
                                         <Grid HorizontalAlignment="Left" MaxWidth="190">
-                                            <Border CornerRadius="999" Background="{Binding PlaceholderBrush}" Opacity="0.16" />
+                                            <Border CornerRadius="16" Background="{Binding PlaceholderBrush}" Opacity="0.16" />
                                             <TextBlock Text="{Binding Category}" Foreground="{Binding PlaceholderBrush}"
                                                        FontWeight="SemiBold" FontSize="21" Margin="16,7"
                                                        TextTrimming="CharacterEllipsis" />
@@ -398,6 +398,7 @@
             <!-- Background: branding image over gradient fallback -->
             <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
             <Image Source="{Binding BackgroundImage}" Stretch="UniformToFill"
+                   Opacity="{Binding BackgroundOpacity}"
                    Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}" />
             <Border Background="#33000000"
                     Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}" />
@@ -742,7 +743,7 @@
                                     </Border.Background>
                                 </Border>
                                 <StackPanel VerticalAlignment="Bottom" Margin="44,0,44,34">
-                                    <Border HorizontalAlignment="Left" CornerRadius="999" Background="#33FFFFFF" Padding="18,8" Margin="0,0,0,16">
+                                    <Border HorizontalAlignment="Left" CornerRadius="16" Background="#33FFFFFF" Padding="18,8" Margin="0,0,0,16">
                                         <TextBlock Text="{Binding Category}" Foreground="White" FontWeight="SemiBold" FontSize="26" />
                                     </Border>
                                     <TextBlock Text="{Binding Title}" Foreground="White" FontWeight="Bold"
@@ -1246,7 +1247,7 @@
                                     <StackPanel Grid.Column="0" Margin="0,0,16,0">
                                         <TextBlock Text="รายละเอียดหนังสือ" FontSize="24" Foreground="{StaticResource MutedBrush}" />
                                         <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="40" Foreground="{StaticResource TextBrush}" TextWrapping="Wrap" Margin="0,6,0,0" />
-                                        <Border HorizontalAlignment="Left" CornerRadius="999" Background="{StaticResource PrimaryTintBrush}" Padding="18,8" Margin="0,16,0,0">
+                                        <Border HorizontalAlignment="Left" CornerRadius="16" Background="{StaticResource PrimaryTintBrush}" Padding="18,8" Margin="0,16,0,0">
                                             <TextBlock Text="{Binding Category}" Foreground="{StaticResource PrimaryBrush}" FontWeight="SemiBold" FontSize="24" />
                                         </Border>
                                     </StackPanel>
@@ -1734,6 +1735,16 @@
                                                     FontSize="28" Command="{Binding ToggleBackgroundCommand}"
                                                     Visibility="{Binding HideBackground, Converter={StaticResource BoolToVis}}" />
                                         </Grid>
+
+                                        <!-- background opacity: fade a busy background so cards/text read clearly -->
+                                        <Grid Margin="0,22,0,0">
+                                            <TextBlock Text="ความเข้มภาพพื้นหลัง" FontSize="30" Foreground="{StaticResource TextBrush}" />
+                                            <TextBlock HorizontalAlignment="Right" FontFamily="{StaticResource MonoFontFamily}"
+                                                       FontSize="30" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"
+                                                       Text="{Binding BackgroundOpacityPercent, StringFormat={}{0:0}%}" />
+                                        </Grid>
+                                        <Slider Minimum="20" Maximum="100" Value="{Binding BackgroundOpacityPercent}"
+                                                TickFrequency="5" IsSnapToTickEnabled="True" Margin="0,12,0,0" Height="48" />
 
                                         <!-- UI scale -->
                                         <Grid Margin="0,30,0,0">

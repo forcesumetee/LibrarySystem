@@ -59,6 +59,9 @@ public partial class HomeViewModel : ObservableObject
     [ObservableProperty] private BitmapSource? _backgroundImage;
     [ObservableProperty] private bool _hasBackground;
     [ObservableProperty] private bool _hasLogo;
+    /// <summary>Opacity applied to the background image element (0.2–1.0). Local per-kiosk
+    /// setting; only the background fades — cards/text stay fully opaque.</summary>
+    [ObservableProperty] private double _backgroundOpacity = 1.0;
 
     // ---- visible-screen flags ----
     [ObservableProperty] private bool _isBrowseVisible;
@@ -135,6 +138,7 @@ public partial class HomeViewModel : ObservableObject
             ? "windowed" : "fullscreen";
         _hideLogo = cfg.HideLogo;
         _hideBackground = cfg.HideBackground;
+        _backgroundOpacity = ClampBackgroundOpacity(cfg.BackgroundOpacity);
         IdleResetSeconds = cfg.IdleResetSeconds;
 
         _localSystemName = string.IsNullOrWhiteSpace(cfg.SystemName) ? null : cfg.SystemName!.Trim();
@@ -157,8 +161,17 @@ public partial class HomeViewModel : ObservableObject
             getBrandingAvailable: () => (_rawLogo != null, _rawBackground != null),
             requestExit: () => ExitRequested?.Invoke(this, EventArgs.Empty),
             applySystemName: SetLocalSystemName,
-            applyResolution: SetCanvasSize);
+            applyResolution: SetCanvasSize,
+            applyBackgroundOpacity: SetBackgroundOpacity);
     }
+
+    /// <summary>Clamp a stored/incoming background opacity into the supported 0.2–1.0 range
+    /// (a legacy/invalid 0 falls back to fully opaque).</summary>
+    private static double ClampBackgroundOpacity(double value)
+        => value <= 0 ? 1.0 : Math.Clamp(value, 0.2, 1.0);
+
+    /// <summary>Apply a new background-image opacity live (from the settings overlay).</summary>
+    public void SetBackgroundOpacity(double value) => BackgroundOpacity = ClampBackgroundOpacity(value);
 
     /// <summary>Resolve the header name: local override wins, else the server name.</summary>
     private void ApplyDisplayName()

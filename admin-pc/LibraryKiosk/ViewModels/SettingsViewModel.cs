@@ -31,6 +31,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly Action _requestExit;
     private readonly Action<string?> _applySystemName;         // K2 item 5
     private readonly Action<double, double> _applyResolution;  // K2 item 4 (w, h)
+    private readonly Action<double> _applyBackgroundOpacity;   // background image opacity (0.2–1.0)
     private readonly AutoStartService _autoStart;
 
     private readonly DispatcherTimer _lockTimer;
@@ -79,6 +80,8 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private bool _hideBackground;
     [ObservableProperty] private double _uiScalePercent = 100;
     [ObservableProperty] private bool _isFullscreen = true;
+    /// <summary>Background-image opacity as a percentage (20–100); bound to a settings slider.</summary>
+    [ObservableProperty] private double _backgroundOpacityPercent = 100;
 
     // ---- system (Phase 6) ----
     [ObservableProperty] private bool _autoStartEnabled;
@@ -101,7 +104,8 @@ public partial class SettingsViewModel : ObservableObject
         Func<(bool logo, bool background)> getBrandingAvailable,
         Action requestExit,
         Action<string?> applySystemName,
-        Action<double, double> applyResolution)
+        Action<double, double> applyResolution,
+        Action<double> applyBackgroundOpacity)
     {
         _settings = settings;
         _sync = sync;
@@ -116,6 +120,7 @@ public partial class SettingsViewModel : ObservableObject
         _requestExit = requestExit;
         _applySystemName = applySystemName;
         _applyResolution = applyResolution;
+        _applyBackgroundOpacity = applyBackgroundOpacity;
 
         var exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "";
         _autoStart = new AutoStartService(exePath);
@@ -137,6 +142,7 @@ public partial class SettingsViewModel : ObservableObject
         var s = _settings.Load();
         BaseUrlInput = s.BaseUrl;
         UiScalePercent = Math.Round(Math.Clamp(s.UiScale, 0.8, 1.2) * 100);
+        BackgroundOpacityPercent = Math.Round(ClampOpacity(s.BackgroundOpacity) * 100);
         IsFullscreen = !string.Equals(s.DisplayMode, "windowed", StringComparison.OrdinalIgnoreCase);
         HideLogo = s.HideLogo;
         HideBackground = s.HideBackground;
@@ -216,6 +222,7 @@ public partial class SettingsViewModel : ObservableObject
         var s = _settings.Load();
         HideLogo = s.HideLogo;
         HideBackground = s.HideBackground;
+        BackgroundOpacityPercent = Math.Round(ClampOpacity(s.BackgroundOpacity) * 100);
         SystemNameInput = s.SystemName ?? "";
         ResWidthInput = (s.CanvasWidth > 0 ? s.CanvasWidth : 1080).ToString();
         ResHeightInput = (s.CanvasHeight > 0 ? s.CanvasHeight : 1920).ToString();
@@ -354,6 +361,21 @@ public partial class SettingsViewModel : ObservableObject
 
         var s = _settings.Load();
         s.UiScale = scale;
+        _settings.Save(s);
+    }
+
+    // ---- background image opacity ----
+
+    /// <summary>Clamp a 0..1 opacity into the supported 0.2–1.0 slider range (0/legacy → 1.0).</summary>
+    private static double ClampOpacity(double value) => value <= 0 ? 1.0 : Math.Clamp(value, 0.2, 1.0);
+
+    partial void OnBackgroundOpacityPercentChanged(double value)
+    {
+        var opacity = ClampOpacity(Math.Clamp(value, 20, 100) / 100.0);
+        _applyBackgroundOpacity(opacity);   // live on the background image
+
+        var s = _settings.Load();
+        s.BackgroundOpacity = opacity;
         _settings.Save(s);
     }
 
