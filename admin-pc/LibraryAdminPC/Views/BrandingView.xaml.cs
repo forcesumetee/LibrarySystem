@@ -70,9 +70,10 @@ public partial class BrandingView : UserControl
         _vm.BackgroundPreviewPath = "";
     }
 
-    private void BtnSaveBranding_Click(object sender, RoutedEventArgs e)
+    private async void BtnSaveBranding_Click(object sender, RoutedEventArgs e)
     {
-        _vm.Save();
+        // K1: save locally AND push branding to the server so kiosks live-update.
+        await _vm.SaveAndPushBrandingAsync();
         Saved?.Invoke(this, EventArgs.Empty);
     }
 }

@@ -191,6 +191,49 @@ public class SettingsViewModel : INotifyPropertyChanged
         Message = "บันทึกการตั้งค่าเรียบร้อย";
     }
 
+    // K1 fix: the local Save() above only mirrors branding into the local config
+    // folder and never tells the server, so the server never broadcast
+    // "SyncRequested" and kiosks kept showing the old logo/background (unlike books,
+    // which sync because import hits a server endpoint that broadcasts). This pushes
+    // any branding change to the EXISTING server endpoints — upload/delete already
+    // update the sha and broadcast SyncRequested — so kiosks refresh within a couple
+    // of seconds. Additive: the local Save() flow is unchanged; we only add the push.
+    public async Task SaveAndPushBrandingAsync()
+    {
+        // Capture branding intent before Save() resets the flags below.
+        var clearLogo = ClearLogo;
+        var clearBg = ClearBackground;
+        var newLogo = (!clearLogo && !string.IsNullOrWhiteSpace(SelectedLogoSource) && File.Exists(SelectedLogoSource))
+            ? SelectedLogoSource : null;
+        var newBg = (!clearBg && !string.IsNullOrWhiteSpace(SelectedBackgroundSource) && File.Exists(SelectedBackgroundSource))
+            ? SelectedBackgroundSource : null;
+
+        Save(); // unchanged local save (config + local branding mirror + status message)
+
+        // No branding change => nothing to push to the server.
+        if (newLogo == null && newBg == null && !clearLogo && !clearBg) return;
+
+        try
+        {
+            var cfg = _configService.Load();
+            var api = new ApiClient(cfg);
+
+            if (newLogo != null || newBg != null)
+                await api.UploadBrandingAsync(newLogo, newBg);
+            if (clearLogo)
+                await api.DeleteLogoAsync();
+            if (clearBg)
+                await api.DeleteBackgroundAsync();
+
+            Message = "บันทึกและส่งให้จอ Kiosk แล้ว";
+        }
+        catch (Exception ex)
+        {
+            // Local save already succeeded; surface the sync failure without hiding it.
+            Error = "บันทึกในเครื่องแล้ว แต่ส่งไป Server ไม่สำเร็จ: " + ex.Message;
+        }
+    }
+
     public async Task TestConnectionAsync()
     {
         if (IsLoading) return;
