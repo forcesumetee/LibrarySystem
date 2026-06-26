@@ -59,6 +59,9 @@ public sealed class SyncService : IAsyncDisposable
     /// <summary>Raised on hub "SyncRequested" and on every (re)connect. May fire on a background thread.</summary>
     public event EventHandler? SyncTriggered;
 
+    /// <summary>Raised on hub "PinResetRequested" (admin reset the kiosk PIN). May fire on a background thread.</summary>
+    public event EventHandler? PinResetRequested;
+
     /// <summary>
     /// Raised when the live SignalR link goes up (true) or down (false). Reuses the
     /// hub's own connect/reconnect/close callbacks — no extra polling. The settings
@@ -141,6 +144,12 @@ public sealed class SyncService : IAsyncDisposable
         {
             KioskLog.Info("Hub: SyncRequested received.");
             SyncTriggered?.Invoke(this, EventArgs.Empty);
+        });
+
+        hub.On("PinResetRequested", () =>
+        {
+            KioskLog.Info("Hub: PinResetRequested received.");
+            PinResetRequested?.Invoke(this, EventArgs.Empty);
         });
 
         hub.Reconnecting += _ =>

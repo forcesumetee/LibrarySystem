@@ -143,6 +143,23 @@ public sealed class PinService
         _settings.Save(s);
     }
 
+    /// <summary>
+    /// Reset the PIN to the factory default ("1234") — clears the stored hash/salt and any
+    /// lockout (FailCount/LockUntil). Triggered by an admin "reset PIN" broadcast when the
+    /// on-site operator forgot the PIN. Touches ONLY the PIN-related fields; every other
+    /// setting (resolution, branding-hide, system name, kiosk id, background opacity, …) is
+    /// loaded and saved back untouched.
+    /// </summary>
+    public void ResetToDefault()
+    {
+        var s = _settings.Load();
+        s.PinHash = null;
+        s.PinSalt = null;
+        s.FailCount = 0;
+        s.LockUntil = 0;
+        _settings.Save(s);
+    }
+
     public static bool IsValidNewPin(string? pin)
         => pin != null && pin.Length >= MinPinLength && pin.Length <= MaxPinLength
            && pin.Length == CountDigits(pin);
