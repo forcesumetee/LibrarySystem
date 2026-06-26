@@ -403,6 +403,14 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void SetLandscapePreset()
+    {
+        ResWidthInput = "1920";
+        ResHeightInput = "1080";
+        ApplyResolution();
+    }
+
+    [RelayCommand]
     private void ApplyResolution()
     {
         if (!int.TryParse((ResWidthInput ?? "").Trim(), out var w) ||
@@ -413,14 +421,7 @@ public partial class SettingsViewModel : ObservableObject
             return;
         }
 
-        // Landscape (width > height) needs the orientation redesign; reject for now so
-        // the portrait-only UI is never letterboxed into the middle of a wide screen.
-        if (w > h)
-        {
-            ResolutionStatus = "ยังไม่รองรับแนวนอน (กว้าง > สูง) — อยู่ระหว่างออกแบบ";
-            return;
-        }
-
+        // Landscape (width > height) now drives the landscape root-swap layout.
         var s = _settings.Load();
         s.CanvasWidth = w;
         s.CanvasHeight = h;

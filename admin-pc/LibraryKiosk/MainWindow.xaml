@@ -278,33 +278,101 @@
             </Setter>
         </Style>
 
-        <!-- Slide-up + (with the overlay's own fade) for settings/PIN panels.
-             Triggers only — each panel supplies its own inline TranslateTransform so
-             the animations stay independent. Driven by Settings.IsOpen (View-only). -->
+        <!-- Fade + slide-up for settings/PIN panels. Keyed on each panel's OWN Visibility
+             (not Settings.IsOpen): gate->panel transitions happen while IsOpen is already
+             true, so an IsOpen-keyed trigger would skip them and the panel would pop in.
+             Each panel supplies its own inline TranslateTransform. View-only. -->
+        <!-- Per-panel fade+slide, each keyed on its OWN visibility flag (DataContext = Settings).
+             Keying on the panel's own flag (not IsOpen) is what makes the gate->settings-panel
+             transition animate too — that happens while IsOpen is already true. Bind to a
+             DataContext bool (proven pattern); a RelativeSource Self Visibility binding throws
+             on style-apply. Each panel supplies its own inline TranslateTransform. View-only. -->
+        <Storyboard x:Key="OverlayPanelEnterAnim">
+            <DoubleAnimation Storyboard.TargetProperty="RenderTransform.Y" From="48" To="0" Duration="0:0:0.22">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.18">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+        <Style x:Key="OverlayKeypadSlideStyle" TargetType="Border">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ShowKeypad}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard Storyboard="{StaticResource OverlayPanelEnterAnim}" />
+                    </DataTrigger.EnterActions>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="OverlayLockSlideStyle" TargetType="Border">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsLocked}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard Storyboard="{StaticResource OverlayPanelEnterAnim}" />
+                    </DataTrigger.EnterActions>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
         <Style x:Key="OverlayPanelSlideStyle" TargetType="Border">
             <Style.Triggers>
-                <DataTrigger Binding="{Binding IsOpen}" Value="True">
+                <DataTrigger Binding="{Binding ShowPanel}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard Storyboard="{StaticResource OverlayPanelEnterAnim}" />
+                    </DataTrigger.EnterActions>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Category chip button visual (shared by the portrait + landscape browse).
+             Own SolidColorBrush instances so fill/border/text animate on (de)select. -->
+        <ControlTemplate x:Key="ChipButtonTemplate" TargetType="Button">
+            <Border x:Name="Chip" CornerRadius="16" BorderThickness="2"
+                    Padding="30,16" MinHeight="64">
+                <Border.Background>
+                    <SolidColorBrush Color="Transparent" />
+                </Border.Background>
+                <Border.BorderBrush>
+                    <SolidColorBrush Color="{StaticResource BorderColor}" />
+                </Border.BorderBrush>
+                <TextBlock x:Name="ChipText" Text="{Binding Name}" FontWeight="SemiBold"
+                           FontSize="32" VerticalAlignment="Center">
+                    <TextBlock.Foreground>
+                        <SolidColorBrush Color="{StaticResource PrimaryColor}" />
+                    </TextBlock.Foreground>
+                </TextBlock>
+            </Border>
+            <ControlTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
                     <DataTrigger.EnterActions>
                         <BeginStoryboard>
                             <Storyboard>
-                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.Y" From="48" To="0" Duration="0:0:0.22">
-                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
-                                </DoubleAnimation>
+                                <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
+                                <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
+                                <ColorAnimation Storyboard.TargetName="ChipText" Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)" To="White" Duration="0:0:0.18" />
                             </Storyboard>
                         </BeginStoryboard>
                     </DataTrigger.EnterActions>
                     <DataTrigger.ExitActions>
                         <BeginStoryboard>
                             <Storyboard>
-                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.Y" To="32" Duration="0:0:0.16">
-                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseIn" /></DoubleAnimation.EasingFunction>
-                                </DoubleAnimation>
+                                <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="Transparent" Duration="0:0:0.18" />
+                                <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="{StaticResource BorderColor}" Duration="0:0:0.18" />
+                                <ColorAnimation Storyboard.TargetName="ChipText" Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
                             </Storyboard>
                         </BeginStoryboard>
                     </DataTrigger.ExitActions>
                 </DataTrigger>
-            </Style.Triggers>
-        </Style>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <!-- Welcome-screen category chip (white translucent pill) — shared portrait + landscape. -->
+        <ControlTemplate x:Key="WelcomeChipTemplate" TargetType="Button">
+            <Border CornerRadius="16" Background="#26FFFFFF"
+                    BorderBrush="#59FFFFFF" BorderThickness="2" Padding="34,18">
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="34"
+                           Foreground="White" VerticalAlignment="Center" />
+            </Border>
+        </ControlTemplate>
     </Window.Resources>
 
     <!-- ============================================================
@@ -320,6 +388,12 @@
             <ScaleTransform ScaleX="{Binding UiScale}" ScaleY="{Binding UiScale}" />
         </Viewbox.RenderTransform>
         <Grid x:Name="DesignCanvas" Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}" Background="Black">
+
+            <!-- ============================================================
+                 PORTRAIT ROOT — the existing layout, wrapped unchanged. Shown
+                 when !IsLandscape. Landscape gets its own parallel root below.
+                 ============================================================ -->
+            <Grid x:Name="PortraitRoot" Visibility="{Binding IsLandscape, Converter={StaticResource InvBoolToVis}}">
 
             <!-- Background: branding image over gradient fallback -->
             <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
@@ -434,53 +508,9 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Button Margin="0,0,16,16" Cursor="Hand"
+                                            Template="{StaticResource ChipButtonTemplate}"
                                             Command="{Binding DataContext.SelectCategoryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            CommandParameter="{Binding Name}">
-                                        <Button.Template>
-                                            <ControlTemplate TargetType="Button">
-                                                <!-- own SolidColorBrush instances (not the frozen shared
-                                                     resources) so the fill/border/text colours can animate
-                                                     smoothly when the chip is (de)selected -->
-                                                <Border x:Name="Chip" CornerRadius="999" BorderThickness="2"
-                                                        Padding="30,16" MinHeight="64">
-                                                    <Border.Background>
-                                                        <SolidColorBrush Color="Transparent" />
-                                                    </Border.Background>
-                                                    <Border.BorderBrush>
-                                                        <SolidColorBrush Color="{StaticResource BorderColor}" />
-                                                    </Border.BorderBrush>
-                                                    <TextBlock x:Name="ChipText" Text="{Binding Name}" FontWeight="SemiBold"
-                                                               FontSize="32" VerticalAlignment="Center">
-                                                        <TextBlock.Foreground>
-                                                            <SolidColorBrush Color="{StaticResource PrimaryColor}" />
-                                                        </TextBlock.Foreground>
-                                                    </TextBlock>
-                                                </Border>
-                                                <ControlTemplate.Triggers>
-                                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                        <DataTrigger.EnterActions>
-                                                            <BeginStoryboard>
-                                                                <Storyboard>
-                                                                    <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
-                                                                    <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
-                                                                    <ColorAnimation Storyboard.TargetName="ChipText" Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)" To="White" Duration="0:0:0.18" />
-                                                                </Storyboard>
-                                                            </BeginStoryboard>
-                                                        </DataTrigger.EnterActions>
-                                                        <DataTrigger.ExitActions>
-                                                            <BeginStoryboard>
-                                                                <Storyboard>
-                                                                    <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="Transparent" Duration="0:0:0.18" />
-                                                                    <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="{StaticResource BorderColor}" Duration="0:0:0.18" />
-                                                                    <ColorAnimation Storyboard.TargetName="ChipText" Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
-                                                                </Storyboard>
-                                                            </BeginStoryboard>
-                                                        </DataTrigger.ExitActions>
-                                                    </DataTrigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </Button.Template>
-                                    </Button>
+                                            CommandParameter="{Binding Name}" />
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -582,11 +612,11 @@
                         </Grid.RowDefinitions>
                         <Border Grid.Row="0" Height="116" CornerRadius="26" Background="#0F000000" />
                         <WrapPanel Grid.Row="1" Margin="0,26,0,0">
-                            <Border CornerRadius="999" Width="140" Height="64" Background="#0F000000" Margin="0,0,16,16" />
-                            <Border CornerRadius="999" Width="200" Height="64" Background="#0F000000" Margin="0,0,16,16" />
-                            <Border CornerRadius="999" Width="170" Height="64" Background="#0F000000" Margin="0,0,16,16" />
-                            <Border CornerRadius="999" Width="220" Height="64" Background="#0F000000" Margin="0,0,16,16" />
-                            <Border CornerRadius="999" Width="150" Height="64" Background="#0F000000" Margin="0,0,16,16" />
+                            <Border CornerRadius="16" Width="140" Height="64" Background="#0F000000" Margin="0,0,16,16" />
+                            <Border CornerRadius="16" Width="200" Height="64" Background="#0F000000" Margin="0,0,16,16" />
+                            <Border CornerRadius="16" Width="170" Height="64" Background="#0F000000" Margin="0,0,16,16" />
+                            <Border CornerRadius="16" Width="220" Height="64" Background="#0F000000" Margin="0,0,16,16" />
+                            <Border CornerRadius="16" Width="150" Height="64" Background="#0F000000" Margin="0,0,16,16" />
                         </WrapPanel>
                         <UniformGrid Grid.Row="2" Columns="3" Margin="-12,30,-12,0" VerticalAlignment="Top">
                             <Border CornerRadius="20" Height="500" Background="#0F000000" Margin="12" />
@@ -598,58 +628,6 @@
                         </UniformGrid>
                     </Grid>
                 </Border>
-            </Grid>
-
-            <!-- ===================== ERROR (unreachable) ===================== -->
-            <Grid Visibility="{Binding IsErrorVisible, Converter={StaticResource BoolToVis}}">
-                <Border Background="#E60F1A33" />
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="820">
-                    <Border Width="200" Height="200" CornerRadius="100" Background="#1FFFFFFF"
-                            BorderBrush="#33FFFFFF" BorderThickness="1" HorizontalAlignment="Center">
-                        <!-- wifi-off: signal arcs + dot with a diagonal slash -->
-                        <Viewbox Width="104" Height="104" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Canvas Width="24" Height="24">
-                                <Path Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                      Opacity="0.92" Data="M2,9 a14,14 0 0 1 20,0" />
-                                <Path Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                      Opacity="0.92" Data="M6,13 a9,9 0 0 1 12,0" />
-                                <Path Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                      Opacity="0.92" Data="M9.5,16.5 a4,4 0 0 1 5,0" />
-                                <Ellipse Canvas.Left="10.6" Canvas.Top="18.4" Width="2.8" Height="2.8" Fill="White" />
-                                <Line X1="3" Y1="3" X2="21" Y2="21" Stroke="White" StrokeThickness="2.2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
-                            </Canvas>
-                        </Viewbox>
-                    </Border>
-                    <TextBlock Text="เชื่อมต่อเซิร์ฟเวอร์ไม่ได้" Foreground="White" FontWeight="Bold"
-                               FontSize="52" HorizontalAlignment="Center" Margin="0,40,0,0" />
-                    <TextBlock Text="ระบบจะลองเชื่อมต่อใหม่อัตโนมัติ หรือกดปุ่มด้านล่างเพื่อลองอีกครั้ง"
-                               Foreground="#D9FFFFFF" FontSize="30" TextAlignment="Center" TextWrapping="Wrap"
-                               HorizontalAlignment="Center" Margin="0,16,0,0" />
-                    <TextBlock Text="{Binding BaseUrl}" Foreground="#99FFFFFF" FontSize="26"
-                               FontFamily="{StaticResource MonoFontFamily}" HorizontalAlignment="Center" Margin="0,18,0,0" />
-                    <Button Content="ลองอีกครั้ง" Command="{Binding RefreshCommand}"
-                            Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Center" Margin="0,40,0,0" />
-                </StackPanel>
-                <!-- always reachable so an admin can fix the URL when stuck offline -->
-                <Button Style="{StaticResource GearButtonStyle}" AutomationProperties.Name="ตั้งค่า"
-                        Command="{Binding OpenSettingsCommand}"
-                        VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,48,48,0" />
-            </Grid>
-
-            <!-- ===================== UNLICENSED ===================== -->
-            <Grid Visibility="{Binding IsUnlicensedVisible, Converter={StaticResource BoolToVis}}">
-                <Border Background="#E60F1A33" />
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="820">
-                    <TextBlock Text="เซิร์ฟเวอร์ยังไม่ได้เปิดใช้งานลิขสิทธิ์" Foreground="White" FontWeight="Bold"
-                               FontSize="46" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" />
-                    <TextBlock Text="{Binding StatusMessage}" Foreground="#D9FFFFFF" FontSize="30"
-                               TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" Margin="0,18,0,0" />
-                    <Button Content="ลองอีกครั้ง" Command="{Binding RefreshCommand}"
-                            Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Center" Margin="0,40,0,0" />
-                </StackPanel>
-                <Button Style="{StaticResource GearButtonStyle}" AutomationProperties.Name="ตั้งค่า"
-                        Command="{Binding OpenSettingsCommand}"
-                        VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,48,48,0" />
             </Grid>
 
             <!-- ===================== DETAIL MODAL ===================== -->
@@ -836,6 +814,648 @@
                 </Button>
             </Grid>
 
+            <!-- ===================== WELCOME (idle screen) =====================
+                 Shown by the idle timer (ShowWelcome resets the grid behind first).
+                 Tap anywhere = enter grid; tap search = enter + focus; tap chip =
+                 enter + filter. Fades in/out. Sits topmost so it covers everything. -->
+            <Grid x:Name="WelcomeOverlay" Visibility="Collapsed"
+                  Background="#01000000" MouseDown="Welcome_Dismiss" TouchDown="Welcome_Dismiss">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsWelcomeVisible}" Value="True">
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" Duration="0:0:0.24">
+                                                <DiscreteObjectKeyFrame KeyTime="0:0:0">
+                                                    <DiscreteObjectKeyFrame.Value><Visibility>Visible</Visibility></DiscreteObjectKeyFrame.Value>
+                                                </DiscreteObjectKeyFrame>
+                                            </ObjectAnimationUsingKeyFrames>
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.22">
+                                                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                                <DataTrigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.18">
+                                                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseIn" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" Duration="0:0:0.18">
+                                                <DiscreteObjectKeyFrame KeyTime="0:0:0.18">
+                                                    <DiscreteObjectKeyFrame.Value><Visibility>Collapsed</Visibility></DiscreteObjectKeyFrame.Value>
+                                                </DiscreteObjectKeyFrame>
+                                            </ObjectAnimationUsingKeyFrames>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.ExitActions>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+
+                <!-- branding background (same layering as the browse view) -->
+                <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
+                <Image Source="{Binding BackgroundImage}" Stretch="UniformToFill"
+                       Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}" />
+                <Border Background="#73091226" />
+
+                <!-- content: logo + welcome + count + big search + category chips -->
+                <StackPanel x:Name="WelcomeContent" VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Width="920" RenderTransformOrigin="0.5,0.5">
+                    <StackPanel.RenderTransform>
+                        <ScaleTransform ScaleX="1" ScaleY="1" />
+                    </StackPanel.RenderTransform>
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsWelcomeVisible}" Value="True">
+                                    <DataTrigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX" From="0.96" To="1" Duration="0:0:0.24">
+                                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY" From="0.96" To="1" Duration="0:0:0.24">
+                                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.EnterActions>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+
+                    <Image Source="{Binding LogoImage}" Stretch="Uniform" Height="170" HorizontalAlignment="Center"
+                           Visibility="{Binding HasLogo, Converter={StaticResource BoolToVis}}" Margin="0,0,0,44" />
+
+                    <TextBlock HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                               Foreground="White" FontWeight="Bold" FontSize="76" LineHeight="86">
+                        <Run Text="ยินดีต้อนรับสู่" /><LineBreak /><Run Text="{Binding DisplayName, Mode=OneWay}" />
+                    </TextBlock>
+
+                    <TextBlock HorizontalAlignment="Center" Margin="0,22,0,0">
+                        <Run Text="{Binding BookCount, Mode=OneWay}" FontFamily="{StaticResource MonoFontFamily}"
+                             FontWeight="Bold" FontSize="40" Foreground="White" />
+                        <Run Text=" เล่มในห้องสมุด" FontSize="34" Foreground="#D9FFFFFF" />
+                    </TextBlock>
+
+                    <!-- big search box: a tap-target (not a live TextBox); enters the grid + focuses the real one -->
+                    <Border MouseDown="Welcome_TapSearch" TouchDown="Welcome_TapSearch" Cursor="Hand"
+                            Background="{StaticResource SurfaceBrush}" CornerRadius="34" Height="132" Margin="0,64,0,0"
+                            Padding="40,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid Grid.Column="0" Width="52" Height="52" Margin="0,0,26,0" VerticalAlignment="Center">
+                                <Ellipse Width="36" Height="36" Stroke="{StaticResource MutedBrush}" StrokeThickness="4"
+                                         HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1" />
+                                <Line X1="32" Y1="32" X2="50" Y2="50" Stroke="{StaticResource MutedBrush}"
+                                      StrokeThickness="4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                            </Grid>
+                            <TextBlock Grid.Column="1" Text="แตะเพื่อค้นหาหนังสือ" FontSize="40"
+                                       Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- category chips: same Categories collection; tap enters grid filtered -->
+                    <ItemsControl ItemsSource="{Binding Categories}" Margin="0,40,0,0" HorizontalAlignment="Center">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Margin="8" Cursor="Hand"
+                                        Template="{StaticResource WelcomeChipTemplate}"
+                                        Command="{Binding DataContext.WelcomeSelectCategoryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding Name}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="แตะที่ใดก็ได้เพื่อเริ่มใช้งาน" HorizontalAlignment="Center"
+                               FontSize="30" Foreground="#A6FFFFFF" Margin="0,56,0,0" />
+                </StackPanel>
+            </Grid>
+            </Grid>
+            <!-- /PortraitRoot -->
+
+            <!-- ============================================================
+                 LANDSCAPE ROOT — shown when IsLandscape. L1 = scaffold only
+                 (shared background + placeholder); L2-L4 fill the per-page
+                 landscape layouts. Shares all styles/templates with portrait.
+                 ============================================================ -->
+            <Grid x:Name="LandscapeRoot" Visibility="{Binding IsLandscape, Converter={StaticResource BoolToVis}}">
+                <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
+                <Image Source="{Binding BackgroundImage}" Stretch="UniformToFill"
+                       Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}" />
+                <Border Background="#33000000"
+                        Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}" />
+                <!-- ===================== BROWSE (landscape) =====================
+                     Same structure as portrait (header + search + chips + grid) laid
+                     out wide, grid 4 columns. Shares CardButtonStyle + ChipButtonTemplate
+                     so restyle + press/colour animations carry over. -->
+                <Grid Visibility="{Binding IsBrowseVisible, Converter={StaticResource BoolToVis}}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Header -->
+                    <Grid Grid.Row="0" Margin="64,40,64,26">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Image Source="{Binding LogoImage}" Stretch="Uniform" Height="80" Margin="0,0,22,0"
+                                   Visibility="{Binding HasLogo, Converter={StaticResource BoolToVis}}" />
+                            <TextBlock Text="{Binding DisplayName}" Foreground="White" FontWeight="Bold"
+                                       FontSize="46" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,22,0">
+                            <TextBlock HorizontalAlignment="Right">
+                                <Run Text="{Binding BookCount, Mode=OneWay}" FontFamily="{StaticResource MonoFontFamily}"
+                                     FontWeight="Bold" FontSize="34" Foreground="White" />
+                                <Run Text=" เล่ม" FontSize="28" Foreground="#CCFFFFFF" />
+                            </TextBlock>
+                            <TextBlock HorizontalAlignment="Right" FontSize="24" Foreground="#B3FFFFFF" Margin="0,4,0,0">
+                                <Run Text="อัปเดต " /><Run Text="{Binding LastUpdated, Mode=OneWay}" />
+                            </TextBlock>
+                        </StackPanel>
+                        <Button Grid.Column="2" Style="{StaticResource GearButtonStyle}"
+                                AutomationProperties.Name="ตั้งค่า" VerticalAlignment="Center"
+                                Command="{Binding OpenSettingsCommand}" />
+                    </Grid>
+
+                    <!-- Body panel -->
+                    <Border Grid.Row="1" Background="{StaticResource PanelBrush}" CornerRadius="44,44,0,0">
+                        <Grid Margin="64,40,64,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <!-- Search (full width) -->
+                            <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}"
+                                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="2"
+                                    CornerRadius="26" Height="108" Padding="28,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid Grid.Column="0" Width="44" Height="44" Margin="0,0,18,0" VerticalAlignment="Center">
+                                        <Ellipse Width="30" Height="30" Stroke="{StaticResource MutedBrush}" StrokeThickness="3"
+                                                 HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1" />
+                                        <Line X1="27" Y1="27" X2="42" Y2="42" Stroke="{StaticResource MutedBrush}"
+                                              StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                    </Grid>
+                                    <Grid Grid.Column="1">
+                                        <TextBlock Text="ค้นหาชื่อหนังสือ เลขทะเบียน หมวดหมู่ หรือสำนักพิมพ์"
+                                                   FontSize="34" Foreground="{StaticResource MutedBrush}"
+                                                   VerticalAlignment="Center" IsHitTestVisible="False"
+                                                   Visibility="{Binding HasQuery, Converter={StaticResource InvBoolToVis}}" />
+                                        <TextBox x:Name="SearchBoxL" Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
+                                                 FontSize="34" Foreground="{StaticResource TextBrush}"
+                                                 FontFamily="{StaticResource AppFontFamily}" ContextMenu="{x:Null}"
+                                                 Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center"
+                                                 CaretBrush="{StaticResource PrimaryBrush}" />
+                                    </Grid>
+                                    <Button Grid.Column="2" Command="{Binding ClearQueryCommand}" Width="56" Height="56"
+                                            Cursor="Hand" VerticalAlignment="Center"
+                                            Visibility="{Binding HasQuery, Converter={StaticResource BoolToVis}}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="#F1F5FA" CornerRadius="28">
+                                                    <Grid Width="28" Height="28">
+                                                        <Line X1="6" Y1="6" X2="22" Y2="22" Stroke="{StaticResource TextSecondBrush}" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                                        <Line X1="22" Y1="6" X2="6" Y2="22" Stroke="{StaticResource TextSecondBrush}" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                                    </Grid>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <!-- Category chips (shared template) -->
+                            <ItemsControl Grid.Row="1" Margin="0,24,0,0" ItemsSource="{Binding Categories}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Margin="0,0,16,16" Cursor="Hand"
+                                                Template="{StaticResource ChipButtonTemplate}"
+                                                Command="{Binding DataContext.SelectCategoryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding Name}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Result count -->
+                            <TextBlock Grid.Row="2" Margin="2,4,0,16">
+                                <Run Text="พบ " FontSize="30" Foreground="{StaticResource TextSecondBrush}" />
+                                <Run Text="{Binding FilteredCount, Mode=OneWay}" FontFamily="{StaticResource MonoFontFamily}"
+                                     FontWeight="Bold" FontSize="30" Foreground="{StaticResource TextBrush}" />
+                                <Run Text=" เล่ม" FontSize="30" Foreground="{StaticResource TextSecondBrush}" />
+                            </TextBlock>
+
+                            <!-- Grid: 4 columns (shared CardButtonStyle), virtualized rows -->
+                            <ItemsControl x:Name="CardsHostL" Grid.Row="3"
+                                          ItemsSource="{Binding BookRows}" Margin="-12,0,-12,24"
+                                          Visibility="{Binding IsEmpty, Converter={StaticResource InvBoolToVis}}"
+                                          VirtualizingPanel.IsVirtualizing="True"
+                                          VirtualizingPanel.VirtualizationMode="Recycling"
+                                          VirtualizingPanel.ScrollUnit="Pixel"
+                                          ScrollViewer.CanContentScroll="True"
+                                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                <ItemsControl.Template>
+                                    <ControlTemplate TargetType="ItemsControl">
+                                        <ScrollViewer CanContentScroll="True" Focusable="False"
+                                                      VerticalScrollBarVisibility="Auto"
+                                                      HorizontalScrollBarVisibility="Disabled">
+                                            <ItemsPresenter />
+                                        </ScrollViewer>
+                                    </ControlTemplate>
+                                </ItemsControl.Template>
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><VirtualizingStackPanel Orientation="Vertical" /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <ItemsControl ItemsSource="{Binding Cards}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><UniformGrid Columns="4" /></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button Style="{StaticResource CardButtonStyle}"
+                                                            Command="{Binding DataContext.SelectBookCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Empty state -->
+                            <StackPanel Grid.Row="3" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                        Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}">
+                                <Border Width="180" Height="180" CornerRadius="90" Background="#E7EDF5" HorizontalAlignment="Center">
+                                    <Grid Width="80" Height="80">
+                                        <Ellipse Width="56" Height="56" Stroke="#9DB0C8" StrokeThickness="5"
+                                                 HorizontalAlignment="Left" VerticalAlignment="Top" Margin="2" />
+                                        <Line X1="52" Y1="52" X2="76" Y2="76" Stroke="#9DB0C8" StrokeThickness="5" StrokeStartLineCap="Round" />
+                                    </Grid>
+                                </Border>
+                                <TextBlock Text="ไม่พบหนังสือที่ค้นหา" FontWeight="Bold" FontSize="44"
+                                           Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center" Margin="0,30,0,0" />
+                                <TextBlock Text="ลองเปลี่ยนคำค้น หรือเลือกหมวดอื่น" FontSize="30"
+                                           Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center" Margin="0,12,0,0" />
+                                <Button Content="ดูหนังสือทั้งหมด" Command="{Binding ResetBrowseCommand}"
+                                        Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Center" Margin="0,34,0,0" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- ===================== DETAIL MODAL (landscape, 2-pane) =====================
+                     Left = cover/colour pane (blur-bg, full, no crop) with title/publisher;
+                     right = details. Same IsDetailOpen flag + fade/scale as portrait. -->
+                <Grid x:Name="DetailModalL" Visibility="Collapsed">
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsDetailOpen}" Value="True">
+                                    <DataTrigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" Duration="0:0:0.18">
+                                                    <DiscreteObjectKeyFrame KeyTime="0:0:0"><DiscreteObjectKeyFrame.Value><Visibility>Visible</Visibility></DiscreteObjectKeyFrame.Value></DiscreteObjectKeyFrame>
+                                                </ObjectAnimationUsingKeyFrames>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.16"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction></DoubleAnimation>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.EnterActions>
+                                    <DataTrigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseIn" /></DoubleAnimation.EasingFunction></DoubleAnimation>
+                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" Duration="0:0:0.14">
+                                                    <DiscreteObjectKeyFrame KeyTime="0:0:0.14"><DiscreteObjectKeyFrame.Value><Visibility>Collapsed</Visibility></DiscreteObjectKeyFrame.Value></DiscreteObjectKeyFrame>
+                                                </ObjectAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.ExitActions>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Border Background="#B3091122" />
+                    <Border Width="1280" Height="640" VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Background="{StaticResource SurfaceBrush}" CornerRadius="36" ClipToBounds="True"
+                            RenderTransformOrigin="0.5,0.5" DataContext="{Binding SelectedBook}">
+                        <Border.RenderTransform>
+                            <ScaleTransform ScaleX="1" ScaleY="1" />
+                        </Border.RenderTransform>
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding DataContext.IsDetailOpen, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                        <DataTrigger.EnterActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX" From="0.95" To="1" Duration="0:0:0.2"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction></DoubleAnimation>
+                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY" From="0.95" To="1" Duration="0:0:0.2"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction></DoubleAnimation>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.EnterActions>
+                                        <DataTrigger.ExitActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX" To="0.97" Duration="0:0:0.14" />
+                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY" To="0.97" Duration="0:0:0.14" />
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.ExitActions>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="500" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- LEFT pane: cover/colour (blur-bg full, no crop) -->
+                            <Border Grid.Column="0" Background="{Binding PlaceholderBrush}" ClipToBounds="True">
+                                <Grid>
+                                    <Image Source="{Binding Cover}" Stretch="UniformToFill" Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}">
+                                        <Image.Effect><BlurEffect Radius="60" KernelType="Gaussian" RenderingBias="Performance" /></Image.Effect>
+                                    </Image>
+                                    <Border Background="#40000000" Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
+                                    <Image Source="{Binding Cover}" Stretch="Uniform" Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
+                                    <TextBlock Text="{Binding Category}" Foreground="#CCFFFFFF" FontWeight="SemiBold" FontSize="26"
+                                               VerticalAlignment="Top" HorizontalAlignment="Left" Margin="40,36,0,0" />
+                                    <Border VerticalAlignment="Bottom" Height="280">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                <GradientStop Color="#00000000" Offset="0" />
+                                                <GradientStop Color="#D9000000" Offset="1" />
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Bottom" Margin="40,0,40,40">
+                                        <TextBlock Text="{Binding Title}" Foreground="White" FontWeight="Bold" FontSize="44" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding Publisher}" Foreground="#CCFFFFFF" FontSize="28" Margin="0,12,0,0"
+                                                   Visibility="{Binding HasPublisher, Converter={StaticResource BoolToVis}}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- RIGHT pane: details -->
+                            <Grid Grid.Column="1" Margin="48,40,48,40">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                        <TextBlock Text="รายละเอียดหนังสือ" FontSize="24" Foreground="{StaticResource MutedBrush}" />
+                                        <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="40" Foreground="{StaticResource TextBrush}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                                        <Border HorizontalAlignment="Left" CornerRadius="999" Background="{StaticResource PrimaryTintBrush}" Padding="18,8" Margin="0,16,0,0">
+                                            <TextBlock Text="{Binding Category}" Foreground="{StaticResource PrimaryBrush}" FontWeight="SemiBold" FontSize="24" />
+                                        </Border>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" VerticalAlignment="Top" Width="64" Height="64" Cursor="Hand"
+                                            Command="{Binding DataContext.CloseDetailCommand, RelativeSource={RelativeSource AncestorType=Window}}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="{StaticResource PanelBrush}" CornerRadius="32"
+                                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="2">
+                                                    <Grid Width="26" Height="26">
+                                                        <Line X1="6" Y1="6" X2="20" Y2="20" Stroke="{StaticResource TextSecondBrush}" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                                        <Line X1="20" Y1="6" X2="6" Y2="20" Stroke="{StaticResource TextSecondBrush}" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                                    </Grid>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </Grid>
+
+                                <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Background="{StaticResource PanelBrush}" CornerRadius="20" Padding="28,22" Margin="0,0,10,0">
+                                            <StackPanel>
+                                                <TextBlock Text="เลขทะเบียน" FontSize="24" Foreground="{StaticResource MutedBrush}" />
+                                                <TextBlock Text="{Binding RegNo}" FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="34" Foreground="{StaticResource TextBrush}" Margin="0,4,0,0" />
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Grid.Column="1" Background="{StaticResource PanelBrush}" CornerRadius="20" Padding="28,22" Margin="10,0,0,0"
+                                                Visibility="{Binding HasPublisher, Converter={StaticResource BoolToVis}}">
+                                            <StackPanel>
+                                                <TextBlock Text="สำนักพิมพ์" FontSize="24" Foreground="{StaticResource MutedBrush}" />
+                                                <TextBlock Text="{Binding Publisher}" FontWeight="SemiBold" FontSize="30" Foreground="{StaticResource TextBrush}" Margin="0,4,0,0" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                    <Border Margin="0,20,0,0" Background="{StaticResource PrimaryTintBrush}" BorderBrush="#D7E2F0" BorderThickness="1" CornerRadius="22" Padding="28,22"
+                                            Visibility="{Binding HasShelf, Converter={StaticResource BoolToVis}}">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Border Width="72" Height="72" CornerRadius="18" Background="{StaticResource PrimaryBrush}" Margin="0,0,22,0">
+                                                <Viewbox Width="40" Height="40">
+                                                    <Path Fill="White" Data="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" />
+                                                </Viewbox>
+                                            </Border>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="ตำแหน่งหนังสือ · ชั้นวาง" FontSize="24" Foreground="#5577A8" />
+                                                <TextBlock Text="{Binding Shelf}" FontWeight="Bold" FontSize="38" Foreground="{StaticResource PrimaryBrush}" Margin="0,2,0,0" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <Button Grid.Row="2" Content="ปิด" Style="{StaticResource PrimaryButtonStyle}"
+                                        Command="{Binding DataContext.CloseDetailCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- ===================== WELCOME (landscape) =====================
+                     Header bar + centred title/subtitle/search/chips. Same IsWelcomeVisible
+                     flag, dismiss handlers, fade as portrait. -->
+                <Grid x:Name="WelcomeOverlayL"
+                      Visibility="{Binding IsWelcomeVisible, Converter={StaticResource BoolToVis}}"
+                      Background="#01000000" MouseDown="Welcome_Dismiss" TouchDown="Welcome_Dismiss">
+
+                    <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
+                    <Image Source="{Binding BackgroundImage}" Stretch="UniformToFill"
+                           Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}" />
+                    <Border Background="#73091226" />
+
+                    <!-- header bar -->
+                    <Grid VerticalAlignment="Top" Margin="64,40,64,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Image Source="{Binding LogoImage}" Stretch="Uniform" Height="72" Margin="0,0,20,0"
+                                   Visibility="{Binding HasLogo, Converter={StaticResource BoolToVis}}" />
+                            <TextBlock Text="{Binding DisplayName}" Foreground="White" FontWeight="Bold"
+                                       FontSize="40" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,20,0">
+                            <TextBlock HorizontalAlignment="Right">
+                                <Run Text="{Binding BookCount, Mode=OneWay}" FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="30" Foreground="White" />
+                                <Run Text=" เล่ม" FontSize="24" Foreground="#CCFFFFFF" />
+                            </TextBlock>
+                            <TextBlock HorizontalAlignment="Right" FontSize="20" Foreground="#B3FFFFFF" Margin="0,4,0,0">
+                                <Run Text="อัปเดต " /><Run Text="{Binding LastUpdated, Mode=OneWay}" />
+                            </TextBlock>
+                        </StackPanel>
+                        <Button Grid.Column="2" Style="{StaticResource GearButtonStyle}" AutomationProperties.Name="ตั้งค่า"
+                                VerticalAlignment="Center" Command="{Binding OpenSettingsCommand}" />
+                    </Grid>
+
+                    <!-- centred content -->
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="1180" RenderTransformOrigin="0.5,0.5">
+                        <StackPanel.RenderTransform>
+                            <ScaleTransform ScaleX="1" ScaleY="1" />
+                        </StackPanel.RenderTransform>
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsWelcomeVisible}" Value="True">
+                                        <DataTrigger.EnterActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.22"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction></DoubleAnimation>
+                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX" From="0.96" To="1" Duration="0:0:0.24"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction></DoubleAnimation>
+                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY" From="0.96" To="1" Duration="0:0:0.24"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction></DoubleAnimation>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.EnterActions>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+
+                        <TextBlock Text="ยินดีต้อนรับสู่" HorizontalAlignment="Center" Foreground="#CCFFFFFF" FontWeight="SemiBold" FontSize="34" />
+                        <TextBlock Text="{Binding DisplayName, Mode=OneWay}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                                   Foreground="White" FontWeight="Bold" FontSize="72" Margin="0,6,0,0" />
+                        <TextBlock HorizontalAlignment="Center" Margin="0,16,0,0">
+                            <Run Text="ค้นหาหนังสือกว่า " FontSize="32" Foreground="#D9FFFFFF" />
+                            <Run Text="{Binding BookCount, Mode=OneWay}" FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="32" Foreground="White" />
+                            <Run Text=" เล่ม ได้ง่าย ๆ เพียงปลายนิ้ว" FontSize="32" Foreground="#D9FFFFFF" />
+                        </TextBlock>
+
+                        <!-- big search (tap-target -> dismiss + focus SearchBoxL) -->
+                        <Border MouseDown="Welcome_TapSearch" TouchDown="Welcome_TapSearch" Cursor="Hand"
+                                Background="{StaticResource SurfaceBrush}" CornerRadius="34" Height="128" Margin="0,48,0,0" Padding="40,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Grid Grid.Column="0" Width="48" Height="48" Margin="0,0,24,0" VerticalAlignment="Center">
+                                    <Ellipse Width="34" Height="34" Stroke="{StaticResource MutedBrush}" StrokeThickness="4" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1" />
+                                    <Line X1="30" Y1="30" X2="46" Y2="46" Stroke="{StaticResource MutedBrush}" StrokeThickness="4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                </Grid>
+                                <TextBlock Grid.Column="1" Text="พิมพ์ชื่อหนังสือ เลขทะเบียน หมวดหมู่ หรือชั้นวาง..." FontSize="36"
+                                           Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
+                                <Border Grid.Column="2" Width="76" Height="76" CornerRadius="38" Background="{StaticResource PrimaryBrush}" VerticalAlignment="Center">
+                                    <Grid Width="40" Height="40">
+                                        <Ellipse Width="26" Height="26" Stroke="White" StrokeThickness="4" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="2" />
+                                        <Line X1="24" Y1="24" X2="38" Y2="38" Stroke="White" StrokeThickness="4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <!-- chips (shared WelcomeChipTemplate) -->
+                        <ItemsControl ItemsSource="{Binding Categories}" Margin="0,36,0,0" HorizontalAlignment="Center">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Margin="8" Cursor="Hand" Template="{StaticResource WelcomeChipTemplate}"
+                                            Command="{Binding DataContext.WelcomeSelectCategoryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding Name}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <TextBlock Text="แตะที่ช่องค้นหาเพื่อเริ่มพิมพ์ หรือเลือกหมวดหมู่ด้านบน" VerticalAlignment="Bottom" HorizontalAlignment="Center"
+                               FontSize="28" Foreground="#A6FFFFFF" Margin="0,0,0,48" />
+                </Grid>
+
+                <!-- ===================== INITIAL LOADING (landscape skeleton) ===================== -->
+                <Grid Visibility="{Binding IsInitialLoading, Converter={StaticResource BoolToVis}}">
+                    <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Margin="64,46,0,0">
+                        <Border Width="80" Height="80" CornerRadius="20" Background="#33FFFFFF" />
+                        <Border Width="360" Height="44" CornerRadius="12" Background="#33FFFFFF" VerticalAlignment="Center" Margin="22,0,0,0" />
+                    </StackPanel>
+                    <Border VerticalAlignment="Bottom" Height="900" Background="{StaticResource PanelBrush}" CornerRadius="44,44,0,0">
+                        <Grid Margin="64,40,64,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0" Height="108" CornerRadius="26" Background="#0F000000" />
+                            <WrapPanel Grid.Row="1" Margin="0,24,0,0">
+                                <Border CornerRadius="16" Width="140" Height="64" Background="#0F000000" Margin="0,0,16,16" />
+                                <Border CornerRadius="16" Width="200" Height="64" Background="#0F000000" Margin="0,0,16,16" />
+                                <Border CornerRadius="16" Width="170" Height="64" Background="#0F000000" Margin="0,0,16,16" />
+                                <Border CornerRadius="16" Width="220" Height="64" Background="#0F000000" Margin="0,0,16,16" />
+                                <Border CornerRadius="16" Width="150" Height="64" Background="#0F000000" Margin="0,0,16,16" />
+                                <Border CornerRadius="16" Width="180" Height="64" Background="#0F000000" Margin="0,0,16,16" />
+                            </WrapPanel>
+                            <UniformGrid Grid.Row="2" Columns="4" Margin="-12,28,-12,0" VerticalAlignment="Top">
+                                <Border CornerRadius="20" Height="430" Background="#0F000000" Margin="12" />
+                                <Border CornerRadius="20" Height="430" Background="#0F000000" Margin="12" />
+                                <Border CornerRadius="20" Height="430" Background="#0F000000" Margin="12" />
+                                <Border CornerRadius="20" Height="430" Background="#0F000000" Margin="12" />
+                            </UniformGrid>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+            <!-- ===== SHARED OVERLAY: settings/PIN/lock (portrait + landscape) ===== -->
             <!-- ===================== ADMIN SETTINGS OVERLAY (Phase 5) ===================== -->
             <!-- Visibility driven by IsOpen via the trigger so the overlay fades in/out
                  (panels also slide up via OverlayPanelSlideStyle) instead of blinking. -->
@@ -881,7 +1501,7 @@
                 <!-- PIN keypad (gate + change-PIN) -->
                 <Border Width="780" VerticalAlignment="Center" HorizontalAlignment="Center"
                         Background="{StaticResource SurfaceBrush}" CornerRadius="40" Padding="56,48"
-                        Style="{StaticResource OverlayPanelSlideStyle}" RenderTransformOrigin="0.5,0.5"
+                        Style="{StaticResource OverlayKeypadSlideStyle}" RenderTransformOrigin="0.5,0.5"
                         Visibility="{Binding ShowKeypad, Converter={StaticResource BoolToVis}}">
                     <Border.RenderTransform>
                         <TranslateTransform Y="0" />
@@ -956,7 +1576,7 @@
                 <!-- lock screen -->
                 <Border Width="780" VerticalAlignment="Center" HorizontalAlignment="Center"
                         Background="{StaticResource SurfaceBrush}" CornerRadius="40" Padding="56,56"
-                        Style="{StaticResource OverlayPanelSlideStyle}" RenderTransformOrigin="0.5,0.5"
+                        Style="{StaticResource OverlayLockSlideStyle}" RenderTransformOrigin="0.5,0.5"
                         Visibility="{Binding IsLocked, Converter={StaticResource BoolToVis}}">
                     <Border.RenderTransform>
                         <TranslateTransform Y="0" />
@@ -1167,28 +1787,48 @@
                                         </UniformGrid>
 
                                         <!-- resolution (K2 item 4): portrait presets + custom W x H -->
-                                        <TextBlock Text="ความละเอียดหน้าจอ (แนวตั้ง)" FontSize="30"
+                                        <TextBlock Text="ความละเอียด / การวางแนวจอ" FontSize="30"
                                                    Foreground="{StaticResource TextBrush}" Margin="0,26,0,12" />
-                                        <Button Content="1080 × 1920 (มาตรฐานแนวตั้ง)" Command="{Binding SetPortraitPresetCommand}"
-                                                Cursor="Hand" HorizontalAlignment="Stretch">
-                                            <Button.Template>
-                                                <ControlTemplate TargetType="Button">
-                                                    <Border x:Name="M" Background="{StaticResource SurfaceBrush}" CornerRadius="18"
-                                                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" MinHeight="80">
-                                                        <TextBlock Text="{TemplateBinding Content}" FontSize="30" FontWeight="SemiBold"
-                                                                   Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                    </Border>
-                                                    <ControlTemplate.Triggers>
-                                                        <Trigger Property="IsPressed" Value="True">
-                                                            <Setter TargetName="M" Property="Background" Value="{StaticResource PrimaryTintBrush}" />
-                                                            <Setter TargetName="M" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
-                                                        </Trigger>
-                                                    </ControlTemplate.Triggers>
-                                                </ControlTemplate>
-                                            </Button.Template>
-                                        </Button>
+                                        <UniformGrid Columns="2">
+                                            <Button Content="1080 × 1920 (แนวตั้ง)" Command="{Binding SetPortraitPresetCommand}"
+                                                    Cursor="Hand" HorizontalAlignment="Stretch" Margin="0,0,7,0">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="M" Background="{StaticResource SurfaceBrush}" CornerRadius="18"
+                                                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" MinHeight="80">
+                                                            <TextBlock Text="{TemplateBinding Content}" FontSize="28" FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsPressed" Value="True">
+                                                                <Setter TargetName="M" Property="Background" Value="{StaticResource PrimaryTintBrush}" />
+                                                                <Setter TargetName="M" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                            <Button Content="1920 × 1080 (แนวนอน)" Command="{Binding SetLandscapePresetCommand}"
+                                                    Cursor="Hand" HorizontalAlignment="Stretch" Margin="7,0,0,0">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="M" Background="{StaticResource SurfaceBrush}" CornerRadius="18"
+                                                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" MinHeight="80">
+                                                            <TextBlock Text="{TemplateBinding Content}" FontSize="28" FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsPressed" Value="True">
+                                                                <Setter TargetName="M" Property="Background" Value="{StaticResource PrimaryTintBrush}" />
+                                                                <Setter TargetName="M" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                        </UniformGrid>
 
-                                        <TextBlock Text="หรือกำหนดเอง (กว้าง × สูง, แนวตั้งเท่านั้น)" FontSize="26"
+                                        <TextBlock Text="หรือกำหนดเอง (กว้าง × สูง)" FontSize="26"
                                                    Foreground="{StaticResource MutedBrush}" Margin="0,18,0,10" />
                                         <Grid>
                                             <Grid.ColumnDefinitions>
@@ -1295,146 +1935,59 @@
                 </Border>
             </Grid>
 
-            <!-- ===================== WELCOME (idle screen) =====================
-                 Shown by the idle timer (ShowWelcome resets the grid behind first).
-                 Tap anywhere = enter grid; tap search = enter + focus; tap chip =
-                 enter + filter. Fades in/out. Sits topmost so it covers everything. -->
-            <Grid x:Name="WelcomeOverlay" Visibility="Collapsed"
-                  Background="#01000000" MouseDown="Welcome_Dismiss" TouchDown="Welcome_Dismiss">
-                <Grid.Style>
-                    <Style TargetType="Grid">
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsWelcomeVisible}" Value="True">
-                                <DataTrigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" Duration="0:0:0.24">
-                                                <DiscreteObjectKeyFrame KeyTime="0:0:0">
-                                                    <DiscreteObjectKeyFrame.Value><Visibility>Visible</Visibility></DiscreteObjectKeyFrame.Value>
-                                                </DiscreteObjectKeyFrame>
-                                            </ObjectAnimationUsingKeyFrames>
-                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.22">
-                                                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
-                                            </DoubleAnimation>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </DataTrigger.EnterActions>
-                                <DataTrigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.18">
-                                                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseIn" /></DoubleAnimation.EasingFunction>
-                                            </DoubleAnimation>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" Duration="0:0:0.18">
-                                                <DiscreteObjectKeyFrame KeyTime="0:0:0.18">
-                                                    <DiscreteObjectKeyFrame.Value><Visibility>Collapsed</Visibility></DiscreteObjectKeyFrame.Value>
-                                                </DiscreteObjectKeyFrame>
-                                            </ObjectAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </DataTrigger.ExitActions>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Grid.Style>
-
-                <!-- branding background (same layering as the browse view) -->
-                <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
-                <Image Source="{Binding BackgroundImage}" Stretch="UniformToFill"
-                       Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}" />
-                <Border Background="#73091226" />
-
-                <!-- content: logo + welcome + count + big search + category chips -->
-                <StackPanel x:Name="WelcomeContent" VerticalAlignment="Center" HorizontalAlignment="Center"
-                            Width="920" RenderTransformOrigin="0.5,0.5">
-                    <StackPanel.RenderTransform>
-                        <ScaleTransform ScaleX="1" ScaleY="1" />
-                    </StackPanel.RenderTransform>
-                    <StackPanel.Style>
-                        <Style TargetType="StackPanel">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsWelcomeVisible}" Value="True">
-                                    <DataTrigger.EnterActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX" From="0.96" To="1" Duration="0:0:0.24">
-                                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
-                                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY" From="0.96" To="1" Duration="0:0:0.24">
-                                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </DataTrigger.EnterActions>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </StackPanel.Style>
-
-                    <Image Source="{Binding LogoImage}" Stretch="Uniform" Height="170" HorizontalAlignment="Center"
-                           Visibility="{Binding HasLogo, Converter={StaticResource BoolToVis}}" Margin="0,0,0,44" />
-
-                    <TextBlock HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
-                               Foreground="White" FontWeight="Bold" FontSize="76" LineHeight="86">
-                        <Run Text="ยินดีต้อนรับสู่" /><LineBreak /><Run Text="{Binding DisplayName, Mode=OneWay}" />
-                    </TextBlock>
-
-                    <TextBlock HorizontalAlignment="Center" Margin="0,22,0,0">
-                        <Run Text="{Binding BookCount, Mode=OneWay}" FontFamily="{StaticResource MonoFontFamily}"
-                             FontWeight="Bold" FontSize="40" Foreground="White" />
-                        <Run Text=" เล่มในห้องสมุด" FontSize="34" Foreground="#D9FFFFFF" />
-                    </TextBlock>
-
-                    <!-- big search box: a tap-target (not a live TextBox); enters the grid + focuses the real one -->
-                    <Border MouseDown="Welcome_TapSearch" TouchDown="Welcome_TapSearch" Cursor="Hand"
-                            Background="{StaticResource SurfaceBrush}" CornerRadius="34" Height="132" Margin="0,64,0,0"
-                            Padding="40,0">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Grid Grid.Column="0" Width="52" Height="52" Margin="0,0,26,0" VerticalAlignment="Center">
-                                <Ellipse Width="36" Height="36" Stroke="{StaticResource MutedBrush}" StrokeThickness="4"
-                                         HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1" />
-                                <Line X1="32" Y1="32" X2="50" Y2="50" Stroke="{StaticResource MutedBrush}"
-                                      StrokeThickness="4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
-                            </Grid>
-                            <TextBlock Grid.Column="1" Text="แตะเพื่อค้นหาหนังสือ" FontSize="40"
-                                       Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
-                        </Grid>
+            <!-- ===== SHARED OVERLAY: error / unlicensed (portrait + landscape) ===== -->
+            <!-- ===================== ERROR (unreachable) ===================== -->
+            <Grid Visibility="{Binding IsErrorVisible, Converter={StaticResource BoolToVis}}">
+                <Border Background="#E60F1A33" />
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="820">
+                    <Border Width="200" Height="200" CornerRadius="100" Background="#1FFFFFFF"
+                            BorderBrush="#33FFFFFF" BorderThickness="1" HorizontalAlignment="Center">
+                        <!-- wifi-off: signal arcs + dot with a diagonal slash -->
+                        <Viewbox Width="104" Height="104" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Canvas Width="24" Height="24">
+                                <Path Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      Opacity="0.92" Data="M2,9 a14,14 0 0 1 20,0" />
+                                <Path Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      Opacity="0.92" Data="M6,13 a9,9 0 0 1 12,0" />
+                                <Path Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      Opacity="0.92" Data="M9.5,16.5 a4,4 0 0 1 5,0" />
+                                <Ellipse Canvas.Left="10.6" Canvas.Top="18.4" Width="2.8" Height="2.8" Fill="White" />
+                                <Line X1="3" Y1="3" X2="21" Y2="21" Stroke="White" StrokeThickness="2.2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                            </Canvas>
+                        </Viewbox>
                     </Border>
-
-                    <!-- category chips: same Categories collection; tap enters grid filtered -->
-                    <ItemsControl ItemsSource="{Binding Categories}" Margin="0,40,0,0" HorizontalAlignment="Center">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Margin="8" Cursor="Hand"
-                                        Command="{Binding DataContext.WelcomeSelectCategoryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                        CommandParameter="{Binding Name}">
-                                    <Button.Template>
-                                        <ControlTemplate TargetType="Button">
-                                            <Border CornerRadius="999" Background="#26FFFFFF"
-                                                    BorderBrush="#59FFFFFF" BorderThickness="2" Padding="34,18">
-                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="34"
-                                                           Foreground="White" VerticalAlignment="Center" />
-                                            </Border>
-                                        </ControlTemplate>
-                                    </Button.Template>
-                                </Button>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <TextBlock Text="แตะที่ใดก็ได้เพื่อเริ่มใช้งาน" HorizontalAlignment="Center"
-                               FontSize="30" Foreground="#A6FFFFFF" Margin="0,56,0,0" />
+                    <TextBlock Text="เชื่อมต่อเซิร์ฟเวอร์ไม่ได้" Foreground="White" FontWeight="Bold"
+                               FontSize="52" HorizontalAlignment="Center" Margin="0,40,0,0" />
+                    <TextBlock Text="ระบบจะลองเชื่อมต่อใหม่อัตโนมัติ หรือกดปุ่มด้านล่างเพื่อลองอีกครั้ง"
+                               Foreground="#D9FFFFFF" FontSize="30" TextAlignment="Center" TextWrapping="Wrap"
+                               HorizontalAlignment="Center" Margin="0,16,0,0" />
+                    <TextBlock Text="{Binding BaseUrl}" Foreground="#99FFFFFF" FontSize="26"
+                               FontFamily="{StaticResource MonoFontFamily}" HorizontalAlignment="Center" Margin="0,18,0,0" />
+                    <Button Content="ลองอีกครั้ง" Command="{Binding RefreshCommand}"
+                            Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Center" Margin="0,40,0,0" />
                 </StackPanel>
+                <!-- always reachable so an admin can fix the URL when stuck offline -->
+                <Button Style="{StaticResource GearButtonStyle}" AutomationProperties.Name="ตั้งค่า"
+                        Command="{Binding OpenSettingsCommand}"
+                        VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,48,48,0" />
             </Grid>
+
+            <!-- ===================== UNLICENSED ===================== -->
+            <Grid Visibility="{Binding IsUnlicensedVisible, Converter={StaticResource BoolToVis}}">
+                <Border Background="#E60F1A33" />
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="820">
+                    <TextBlock Text="เซิร์ฟเวอร์ยังไม่ได้เปิดใช้งานลิขสิทธิ์" Foreground="White" FontWeight="Bold"
+                               FontSize="46" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding StatusMessage}" Foreground="#D9FFFFFF" FontSize="30"
+                               TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" Margin="0,18,0,0" />
+                    <Button Content="ลองอีกครั้ง" Command="{Binding RefreshCommand}"
+                            Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Center" Margin="0,40,0,0" />
+                </StackPanel>
+                <Button Style="{StaticResource GearButtonStyle}" AutomationProperties.Name="ตั้งค่า"
+                        Command="{Binding OpenSettingsCommand}"
+                        VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,48,48,0" />
+            </Grid>
+
         </Grid>
     </Viewbox>
     </Grid>

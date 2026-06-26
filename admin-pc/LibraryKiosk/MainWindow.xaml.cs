@@ -72,8 +72,10 @@ public partial class MainWindow : Window
             WindowStyle = WindowStyle.SingleBorderWindow;
             ResizeMode = ResizeMode.CanResize;
             WindowState = WindowState.Normal;
-            Width = 540;
-            Height = 960;
+            // Match the design-canvas aspect so the Viewbox isn't heavily letterboxed.
+            var landscape = _vm.IsLandscape;
+            Width = landscape ? 960 : 540;
+            Height = landscape ? 540 : 960;
         }
         else
         {
@@ -118,17 +120,21 @@ public partial class MainWindow : Window
     {
         e.Handled = true;
         _vm.DismissWelcome();
-        // Let the dismiss/layout settle, then focus the grid's search box.
+        // Let the dismiss/layout settle, then focus the active grid's search box
+        // (portrait vs landscape root-swap).
         Dispatcher.BeginInvoke(new Action(() =>
         {
-            SearchBox.Focus();
-            Keyboard.Focus(SearchBox);
+            var box = _vm.IsLandscape ? SearchBoxL : SearchBox;
+            box.Focus();
+            Keyboard.Focus(box);
         }), DispatcherPriority.Input);
     }
 
     private void OnScrollResetRequested(object? sender, EventArgs e)
     {
-        var sv = FindVisualChild<ScrollViewer>(CardsHost);
+        // Scroll whichever grid is currently shown (portrait vs landscape root-swap).
+        DependencyObject host = _vm.IsLandscape ? CardsHostL : CardsHost;
+        var sv = FindVisualChild<ScrollViewer>(host);
         sv?.ScrollToTop();
     }
 

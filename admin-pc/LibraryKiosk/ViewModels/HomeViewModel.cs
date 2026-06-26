@@ -73,7 +73,8 @@ public partial class HomeViewModel : ObservableObject
 
     // ---- search / filter ----
     [ObservableProperty] private string _query = "";
-    private const int GridColumns = 3;
+    // Grid columns follow orientation: 3 portrait, 4 landscape (per the landscape mockup).
+    private int GridColumns => IsLandscape ? 4 : 3;
     private string _selectedCategory = AllCategory;
     public ObservableCollection<CategoryChipViewModel> Categories { get; } = new();
     public ObservableCollection<BookCardViewModel> FilteredBooks { get; } = new();
@@ -95,6 +96,10 @@ public partial class HomeViewModel : ObservableObject
     [ObservableProperty] private double _canvasWidth = 1080;
     /// <summary>Design-canvas height the Uniform Viewbox fits to the screen.</summary>
     [ObservableProperty] private double _canvasHeight = 1920;
+
+    /// <summary>True when the design canvas is wider than tall — drives the landscape
+    /// root-swap layout and the grid column count. Derived from the canvas size.</summary>
+    public bool IsLandscape => CanvasWidth > CanvasHeight;
 
     /// <summary>Last-applied display mode ("fullscreen"/"windowed"); the window reads this on load.</summary>
     public string DisplayMode { get; private set; } = "fullscreen";
@@ -170,11 +175,20 @@ public partial class HomeViewModel : ObservableObject
         ApplyDisplayName();
     }
 
-    /// <summary>Apply a new design-canvas resolution (K2 item 4); the Viewbox refits.</summary>
+    /// <summary>Apply a new design-canvas resolution (K2 item 4); the Viewbox refits.
+    /// May flip orientation (portrait&lt;-&gt;landscape) — re-chunk the grid for the new
+    /// column count and re-apply the window sizing for the new aspect.</summary>
     public void SetCanvasSize(double width, double height)
     {
+        var wasLandscape = IsLandscape;
         CanvasWidth = width;
         CanvasHeight = height;
+        if (IsLandscape != wasLandscape)
+        {
+            OnPropertyChanged(nameof(IsLandscape));
+            RebuildRows();                              // 3-col <-> 4-col chunking
+            DisplayModeChangeRequested?.Invoke(DisplayMode); // re-size the window for the new aspect
+        }
     }
 
     private void OnHubConnectionChanged(object? sender, bool connected)
