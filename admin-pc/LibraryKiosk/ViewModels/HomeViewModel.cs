@@ -274,7 +274,11 @@ public partial class HomeViewModel : ObservableObject
                 IsErrorVisible = false;
                 IsUnlicensedVisible = false;
 
-                StartCoverLoading(_allCards);
+                // Re-verify covers only when the server changed something since the last
+                // scan (cover upload/edit/delete bumps LastUpdated). Idle/reconnect syncs
+                // keep the same stamp -> covers reapply from cache with no network.
+                var stamp = snap.Meta!.LastUpdated ?? "";
+                StartCoverLoading(_allCards, _sync.CoversNeedVerify(stamp), stamp);
                 break;
 
             case ConnectionState.Unlicensed:
@@ -400,13 +404,17 @@ public partial class HomeViewModel : ObservableObject
 
     // ---------------- covers ----------------
 
-    private void StartCoverLoading(IReadOnlyList<BookCardViewModel> cards)
+    private void StartCoverLoading(IReadOnlyList<BookCardViewModel> cards, bool verify, string stamp)
     {
         var generation = ++_coverGeneration;
         var snapshot = cards.ToList();
 
         _ = Task.Run(async () =>
         {
+            // Throttled (6 concurrent) background load so a 500-book catalogue never
+            // blocks the UI. When verify is false this is all cache hits (no network);
+            // when true each book does one light cover/meta check and only changed
+            // covers are re-downloaded.
             using var sem = new SemaphoreSlim(6);
             var tasks = snapshot.Select(async card =>
             {
@@ -414,7 +422,7 @@ public partial class HomeViewModel : ObservableObject
                 try
                 {
                     if (generation != _coverGeneration) return;
-                    var img = await _sync.LoadCoverAsync(card.RegNo);
+                    var img = await _sync.ResolveCoverAsync(card.RegNo, verify);
                     if (img != null && generation == _coverGeneration)
                         await OnUi(() => card.SetCover(img));
                 }
@@ -422,6 +430,11 @@ public partial class HomeViewModel : ObservableObject
                 finally { sem.Release(); }
             });
             await Task.WhenAll(tasks);
+
+            // Mark this server stamp as scanned only after a full, current-generation
+            // pass, so an interrupted scan re-verifies next time.
+            if (verify && generation == _coverGeneration)
+                _sync.MarkCoversScanned(stamp);
         });
     }
 

@@ -174,6 +174,31 @@ public sealed class ApiClient : IDisposable
     }
 
     /// <summary>
+    /// GET /api/books/{regNo}/cover/meta — lightweight cover change-token. Returns
+    /// (hasCover, sha256) so a sync can decide whether to (re)download a cover
+    /// without fetching the image. Null on any failure (caller keeps what it has).
+    /// </summary>
+    public async Task<(bool hasCover, string? sha)?> GetCoverMetaAsync(string regNo, CancellationToken ct = default)
+    {
+        try
+        {
+            using var resp = await _http.GetAsync(BuildUrl($"api/books/{Uri.EscapeDataString(regNo)}/cover/meta"), ct).ConfigureAwait(false);
+            if (!resp.IsSuccessStatusCode) return null;
+            var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            using var doc = JsonDocument.Parse(body);
+            var root = doc.RootElement;
+            var hasCover = root.TryGetProperty("hasCover", out var hc) && hc.ValueKind == JsonValueKind.True;
+            string? sha = root.TryGetProperty("sha256", out var s) ? s.GetString() : null;
+            return (hasCover, sha);
+        }
+        catch (Exception ex)
+        {
+            KioskLog.Warn($"GET cover/meta {regNo} failed: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Download raw image bytes for a relative path (e.g. "api/branding/logo"),
     /// always cache-busted. Returns null on 404 or any failure.
     /// </summary>
