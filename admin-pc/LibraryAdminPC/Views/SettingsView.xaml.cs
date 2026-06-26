@@ -175,10 +175,11 @@ public partial class SettingsView : UserControl
         _vm.BackgroundPreviewPath = "";
     }
 
-    private void BtnSave_Click(object sender, RoutedEventArgs e)
+    private async void BtnSave_Click(object sender, RoutedEventArgs e)
     {
         _vm.AdminKey = PwdAdminKey.Password;
-        _vm.Save();
+        // K1: save locally AND push any branding change to the server so kiosks live-update.
+        await _vm.SaveAndPushBrandingAsync();
         Saved?.Invoke(this, EventArgs.Empty);
     }
 
