@@ -28,7 +28,13 @@
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="CardRoot" Background="{StaticResource SurfaceBrush}"
                                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
-                                CornerRadius="20" SnapsToDevicePixels="True">
+                                CornerRadius="20" SnapsToDevicePixels="True"
+                                RenderTransformOrigin="0.5,0.5">
+                            <!-- press feedback: GPU-friendly RenderTransform scale (no layout pass).
+                                 Identity at rest so virtualized scrolling is unaffected. -->
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="CardScale" ScaleX="1" ScaleY="1" />
+                            </Border.RenderTransform>
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="320" />
@@ -47,9 +53,26 @@
                                             <Path Fill="#80FFFFFF"
                                                   Data="M3,5 C3,4.5 5,4 8,4 C10,4 11.5,4.5 12,5 L12,18 C11.5,17.5 10,17 8,17 C5,17 3,17.5 3,18 Z M21,5 C21,4.5 19,4 16,4 C14,4 12.5,4.5 12,5 L12,18 C12.5,17.5 14,17 16,17 C19,17 21,17.5 21,18 Z" />
                                         </Viewbox>
-                                        <!-- cover present: whole cover, no crop (chip fills any margin) -->
-                                        <Image Source="{Binding Cover}" Stretch="Uniform"
-                                               Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
+                                        <!-- cover present: whole cover, no crop (chip fills any margin).
+                                             Fades in only when a genuinely new BitmapSource arrives: the
+                                             VM reuses the cached instance on re-sync with an unchanged sha,
+                                             so Cover doesn't raise PropertyChanged and TargetUpdated stays
+                                             silent — no fade loop on re-sync. -->
+                                        <Image Stretch="Uniform"
+                                               Source="{Binding Cover, NotifyOnTargetUpdated=True}"
+                                               Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}">
+                                            <Image.Triggers>
+                                                <EventTrigger RoutedEvent="Binding.TargetUpdated">
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.18">
+                                                                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                                            </DoubleAnimation>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </EventTrigger>
+                                            </Image.Triggers>
+                                        </Image>
                                     </Grid>
                                 </Border>
 
@@ -89,6 +112,36 @@
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="CardRoot" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
                                 <Setter TargetName="CardRoot" Property="BorderThickness" Value="3" />
+                                <!-- finger-down: quick shrink so the touch reads as registered -->
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="CardScale" Storyboard.TargetProperty="ScaleX"
+                                                             To="0.96" Duration="0:0:0.09">
+                                                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="CardScale" Storyboard.TargetProperty="ScaleY"
+                                                             To="0.96" Duration="0:0:0.09">
+                                                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <!-- release: spring back to 1.0 with a gentle overshoot -->
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="CardScale" Storyboard.TargetProperty="ScaleX"
+                                                             To="1" Duration="0:0:0.18">
+                                                <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.3" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="CardScale" Storyboard.TargetProperty="ScaleY"
+                                                             To="1" Duration="0:0:0.18">
+                                                <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.3" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -152,13 +205,41 @@
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="K" Background="{StaticResource SurfaceBrush}"
                                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="2"
-                                CornerRadius="24" MinWidth="150" MinHeight="120">
+                                CornerRadius="24" MinWidth="150" MinHeight="120"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="KeyScale" ScaleX="1" ScaleY="1" />
+                            </Border.RenderTransform>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="K" Property="Background" Value="{StaticResource PrimaryTintBrush}" />
                                 <Setter TargetName="K" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="KeyScale" Storyboard.TargetProperty="ScaleX" To="0.94" Duration="0:0:0.08">
+                                                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="KeyScale" Storyboard.TargetProperty="ScaleY" To="0.94" Duration="0:0:0.08">
+                                                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="KeyScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.16">
+                                                <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.3" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="KeyScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.16">
+                                                <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.3" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="K" Property="Opacity" Value="0.4" />
@@ -195,6 +276,34 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+
+        <!-- Slide-up + (with the overlay's own fade) for settings/PIN panels.
+             Triggers only — each panel supplies its own inline TranslateTransform so
+             the animations stay independent. Driven by Settings.IsOpen (View-only). -->
+        <Style x:Key="OverlayPanelSlideStyle" TargetType="Border">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsOpen}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.Y" From="48" To="0" Duration="0:0:0.22">
+                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                    <DataTrigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.Y" To="32" Duration="0:0:0.16">
+                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseIn" /></DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.ExitActions>
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
     </Window.Resources>
 
@@ -329,19 +438,44 @@
                                             CommandParameter="{Binding Name}">
                                         <Button.Template>
                                             <ControlTemplate TargetType="Button">
-                                                <Border x:Name="Chip" CornerRadius="999"
-                                                        Background="Transparent"
-                                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="2"
+                                                <!-- own SolidColorBrush instances (not the frozen shared
+                                                     resources) so the fill/border/text colours can animate
+                                                     smoothly when the chip is (de)selected -->
+                                                <Border x:Name="Chip" CornerRadius="999" BorderThickness="2"
                                                         Padding="30,16" MinHeight="64">
+                                                    <Border.Background>
+                                                        <SolidColorBrush Color="Transparent" />
+                                                    </Border.Background>
+                                                    <Border.BorderBrush>
+                                                        <SolidColorBrush Color="{StaticResource BorderColor}" />
+                                                    </Border.BorderBrush>
                                                     <TextBlock x:Name="ChipText" Text="{Binding Name}" FontWeight="SemiBold"
-                                                               FontSize="32" Foreground="{StaticResource PrimaryBrush}"
-                                                               VerticalAlignment="Center" />
+                                                               FontSize="32" VerticalAlignment="Center">
+                                                        <TextBlock.Foreground>
+                                                            <SolidColorBrush Color="{StaticResource PrimaryColor}" />
+                                                        </TextBlock.Foreground>
+                                                    </TextBlock>
                                                 </Border>
                                                 <ControlTemplate.Triggers>
                                                     <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                        <Setter TargetName="Chip" Property="Background" Value="{StaticResource PrimaryBrush}" />
-                                                        <Setter TargetName="Chip" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
-                                                        <Setter TargetName="ChipText" Property="Foreground" Value="White" />
+                                                        <DataTrigger.EnterActions>
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
+                                                                    <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
+                                                                    <ColorAnimation Storyboard.TargetName="ChipText" Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)" To="White" Duration="0:0:0.18" />
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </DataTrigger.EnterActions>
+                                                        <DataTrigger.ExitActions>
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="Transparent" Duration="0:0:0.18" />
+                                                                    <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="{StaticResource BorderColor}" Duration="0:0:0.18" />
+                                                                    <ColorAnimation Storyboard.TargetName="ChipText" Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </DataTrigger.ExitActions>
                                                     </DataTrigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
@@ -519,11 +653,86 @@
             </Grid>
 
             <!-- ===================== DETAIL MODAL ===================== -->
-            <Grid Visibility="{Binding IsDetailOpen, Converter={StaticResource BoolToVis}}">
+            <!-- Visibility is driven by IsDetailOpen via the trigger below (not a direct
+                 binding) so the modal can fade+scale IN on open and fade OUT before it
+                 collapses. Same VM flag, same behaviour — just animated. -->
+            <Grid x:Name="DetailModal" Visibility="Collapsed">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsDetailOpen}" Value="True">
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" Duration="0:0:0.18">
+                                                <DiscreteObjectKeyFrame KeyTime="0:0:0">
+                                                    <DiscreteObjectKeyFrame.Value><Visibility>Visible</Visibility></DiscreteObjectKeyFrame.Value>
+                                                </DiscreteObjectKeyFrame>
+                                            </ObjectAnimationUsingKeyFrames>
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.16">
+                                                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                                <DataTrigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.14">
+                                                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseIn" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" Duration="0:0:0.14">
+                                                <DiscreteObjectKeyFrame KeyTime="0:0:0.14">
+                                                    <DiscreteObjectKeyFrame.Value><Visibility>Collapsed</Visibility></DiscreteObjectKeyFrame.Value>
+                                                </DiscreteObjectKeyFrame>
+                                            </ObjectAnimationUsingKeyFrames>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.ExitActions>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
                 <Border Background="#B3091122" />
                 <Border Width="880" MaxHeight="1640" VerticalAlignment="Center" HorizontalAlignment="Center"
                         Background="{StaticResource SurfaceBrush}" CornerRadius="36"
+                        RenderTransformOrigin="0.5,0.5"
                         DataContext="{Binding SelectedBook}">
+                    <Border.RenderTransform>
+                        <ScaleTransform ScaleX="1" ScaleY="1" />
+                    </Border.RenderTransform>
+                    <!-- card scales 0.95 -> 1 as the overlay fades in (self-target property
+                         path, since a Style storyboard can't reference an element by name) -->
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DataContext.IsDetailOpen, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                    <DataTrigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX"
+                                                                 From="0.95" To="1" Duration="0:0:0.2">
+                                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY"
+                                                                 From="0.95" To="1" Duration="0:0:0.2">
+                                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.EnterActions>
+                                    <DataTrigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX" To="0.97" Duration="0:0:0.14" />
+                                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY" To="0.97" Duration="0:0:0.14" />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.ExitActions>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -628,14 +837,55 @@
             </Grid>
 
             <!-- ===================== ADMIN SETTINGS OVERLAY (Phase 5) ===================== -->
-            <Grid DataContext="{Binding Settings}"
-                  Visibility="{Binding IsOpen, Converter={StaticResource BoolToVis}}">
+            <!-- Visibility driven by IsOpen via the trigger so the overlay fades in/out
+                 (panels also slide up via OverlayPanelSlideStyle) instead of blinking. -->
+            <Grid x:Name="SettingsOverlay" DataContext="{Binding Settings}" Visibility="Collapsed">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsOpen}" Value="True">
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" Duration="0:0:0.2">
+                                                <DiscreteObjectKeyFrame KeyTime="0:0:0">
+                                                    <DiscreteObjectKeyFrame.Value><Visibility>Visible</Visibility></DiscreteObjectKeyFrame.Value>
+                                                </DiscreteObjectKeyFrame>
+                                            </ObjectAnimationUsingKeyFrames>
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.16">
+                                                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                                <DataTrigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.16">
+                                                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseIn" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" Duration="0:0:0.16">
+                                                <DiscreteObjectKeyFrame KeyTime="0:0:0.16">
+                                                    <DiscreteObjectKeyFrame.Value><Visibility>Collapsed</Visibility></DiscreteObjectKeyFrame.Value>
+                                                </DiscreteObjectKeyFrame>
+                                            </ObjectAnimationUsingKeyFrames>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.ExitActions>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
                 <Border Background="#D90B1426" />
 
                 <!-- PIN keypad (gate + change-PIN) -->
                 <Border Width="780" VerticalAlignment="Center" HorizontalAlignment="Center"
                         Background="{StaticResource SurfaceBrush}" CornerRadius="40" Padding="56,48"
+                        Style="{StaticResource OverlayPanelSlideStyle}" RenderTransformOrigin="0.5,0.5"
                         Visibility="{Binding ShowKeypad, Converter={StaticResource BoolToVis}}">
+                    <Border.RenderTransform>
+                        <TranslateTransform Y="0" />
+                    </Border.RenderTransform>
                     <StackPanel>
                         <TextBlock Text="{Binding Pad.Title}" FontWeight="Bold" FontSize="48"
                                    Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center" />
@@ -644,8 +894,11 @@
                                    Margin="0,10,0,0" TextAlignment="Center" />
 
                         <!-- entered digits, masked -->
-                        <Border Background="{StaticResource PanelBrush}" CornerRadius="20" Height="96"
-                                Margin="0,30,0,0">
+                        <Border x:Name="PinMask" Background="{StaticResource PanelBrush}" CornerRadius="20" Height="96"
+                                Margin="0,30,0,0" RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1" />
+                            </Border.RenderTransform>
                             <TextBlock Text="{Binding Pad.Mask}" FontFamily="{StaticResource MonoFontFamily}"
                                        FontSize="56" Foreground="{StaticResource PrimaryBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -657,8 +910,25 @@
                                    Margin="0,18,0,0" TextAlignment="Center" TextWrapping="Wrap"
                                    Visibility="{Binding Pad.HasError, Converter={StaticResource BoolToVis}}" />
 
-                        <!-- keypad -->
+                        <!-- keypad: any key press bounces the mask above (Button.Click bubbles
+                             up here from every key) so the entered-digits readout feels responsive -->
                         <UniformGrid Columns="3" Margin="0,24,0,0">
+                            <UniformGrid.Triggers>
+                                <EventTrigger RoutedEvent="ButtonBase.Click">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="PinMask" Storyboard.TargetProperty="RenderTransform.ScaleX"
+                                                             To="1.06" Duration="0:0:0.08" AutoReverse="True">
+                                                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="PinMask" Storyboard.TargetProperty="RenderTransform.ScaleY"
+                                                             To="1.06" Duration="0:0:0.08" AutoReverse="True">
+                                                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </UniformGrid.Triggers>
                             <Button Content="1" Style="{StaticResource KeypadButtonStyle}" Command="{Binding Pad.PressCommand}" CommandParameter="1" />
                             <Button Content="2" Style="{StaticResource KeypadButtonStyle}" Command="{Binding Pad.PressCommand}" CommandParameter="2" />
                             <Button Content="3" Style="{StaticResource KeypadButtonStyle}" Command="{Binding Pad.PressCommand}" CommandParameter="3" />
@@ -686,7 +956,11 @@
                 <!-- lock screen -->
                 <Border Width="780" VerticalAlignment="Center" HorizontalAlignment="Center"
                         Background="{StaticResource SurfaceBrush}" CornerRadius="40" Padding="56,56"
+                        Style="{StaticResource OverlayPanelSlideStyle}" RenderTransformOrigin="0.5,0.5"
                         Visibility="{Binding IsLocked, Converter={StaticResource BoolToVis}}">
+                    <Border.RenderTransform>
+                        <TranslateTransform Y="0" />
+                    </Border.RenderTransform>
                     <StackPanel>
                         <Border Width="170" Height="170" CornerRadius="85" Background="#FBE9E7"
                                 HorizontalAlignment="Center">
@@ -710,7 +984,11 @@
                 <!-- settings panel -->
                 <Border Width="920" MaxHeight="1740" VerticalAlignment="Center" HorizontalAlignment="Center"
                         Background="{StaticResource PanelBrush}" CornerRadius="40"
+                        Style="{StaticResource OverlayPanelSlideStyle}" RenderTransformOrigin="0.5,0.5"
                         Visibility="{Binding ShowPanel, Converter={StaticResource BoolToVis}}">
+                    <Border.RenderTransform>
+                        <TranslateTransform Y="0" />
+                    </Border.RenderTransform>
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
