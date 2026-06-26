@@ -42,6 +42,26 @@ public sealed class SyncService : IAsyncDisposable
     /// <summary>Raised on hub "SyncRequested" and on every (re)connect. May fire on a background thread.</summary>
     public event EventHandler? SyncTriggered;
 
+    /// <summary>
+    /// Raised when the live SignalR link goes up (true) or down (false). Reuses the
+    /// hub's own connect/reconnect/close callbacks — no extra polling. The settings
+    /// panel uses this for a realtime connected/disconnected indicator. May fire on a
+    /// background thread.
+    /// </summary>
+    public event EventHandler<bool>? HubConnectionChanged;
+
+    private volatile bool _hubConnected;
+
+    /// <summary>Last known SignalR link state (true = connected).</summary>
+    public bool IsHubConnected => _hubConnected;
+
+    private void SetHubConnected(bool connected)
+    {
+        if (_hubConnected == connected) return;
+        _hubConnected = connected;
+        HubConnectionChanged?.Invoke(this, connected);
+    }
+
     public SyncService(string baseUrl)
     {
         _api = new ApiClient(baseUrl);
@@ -92,9 +112,16 @@ public sealed class SyncService : IAsyncDisposable
             SyncTriggered?.Invoke(this, EventArgs.Empty);
         });
 
+        hub.Reconnecting += _ =>
+        {
+            SetHubConnected(false);
+            return Task.CompletedTask;
+        };
+
         hub.Reconnected += _ =>
         {
             KioskLog.Info("Hub reconnected; triggering catch-up sync.");
+            SetHubConnected(true);
             SyncTriggered?.Invoke(this, EventArgs.Empty);
             return Task.CompletedTask;
         };
@@ -121,6 +148,7 @@ public sealed class SyncService : IAsyncDisposable
             {
                 await hub.StartAsync(token).ConfigureAwait(false);
                 KioskLog.Info($"Hub connected: {_api.BaseUrl}");
+                SetHubConnected(true);
                 // Catch-up sync on connect so we never miss data set before we joined.
                 SyncTriggered?.Invoke(this, EventArgs.Empty);
                 return;
@@ -141,6 +169,7 @@ public sealed class SyncService : IAsyncDisposable
 
     private async Task OnHubClosed(Exception? error)
     {
+        SetHubConnected(false);
         if (_disposed || _stopping) return; // expected close during stop/rebind/dispose
         KioskLog.Warn($"Hub closed ({error?.Message ?? "no error"}); restarting in 5s.");
         try { await Task.Delay(TimeSpan.FromSeconds(5), _lifetime.Token).ConfigureAwait(false); }

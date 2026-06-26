@@ -28,6 +28,18 @@ public sealed class KioskSettings
     /// <summary>"fullscreen" (kiosk) or "windowed" (dev).</summary>
     public string DisplayMode { get; set; } = "fullscreen";
 
+    // --- Display name override (K2 item 5). Local per-kiosk system name; when
+    //     null/blank the header falls back to the server's displayName (/api/config),
+    //     i.e. the original behaviour. Never sent to the server. ---
+    public string? SystemName { get; set; }
+
+    // --- Design-canvas resolution (K2 item 4). The UI is laid out on a WxH canvas
+    //     that a Uniform Viewbox fits to the screen. Default 1080x1920 (portrait).
+    //     Portrait/custom-portrait only for now; landscape (W > H) is rejected until
+    //     the orientation redesign is decided. ---
+    public int CanvasWidth { get; set; } = 1080;
+    public int CanvasHeight { get; set; } = 1920;
+
     // --- Local branding overrides (Phase 5). Hide the server logo/background on
     //     THIS kiosk only; the server is never touched. Mirrors the legacy Android
     //     app's "remove image (this device)" option. ---

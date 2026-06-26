@@ -39,6 +39,12 @@ public partial class HomeViewModel : ObservableObject
     private bool _hideLogo;
     private bool _hideBackground;
 
+    // System name (K2 item 5): the displayed header name is the local override when
+    // set, otherwise the server's displayName. We keep both raw values so toggling the
+    // local override re-resolves without a re-sync.
+    private string? _serverDisplayName;
+    private string? _localSystemName;
+
     // ---- connection / meta ----
     [ObservableProperty] private ConnectionState _state = ConnectionState.Loading;
     [ObservableProperty] private bool _isLoading;
@@ -80,6 +86,12 @@ public partial class HomeViewModel : ObservableObject
     /// <summary>Extra zoom applied outside the fit Viewbox (bound to a ScaleTransform).</summary>
     [ObservableProperty] private double _uiScale = 1.0;
 
+    // ---- design-canvas resolution (K2 item 4) ----
+    /// <summary>Design-canvas width the Uniform Viewbox fits to the screen.</summary>
+    [ObservableProperty] private double _canvasWidth = 1080;
+    /// <summary>Design-canvas height the Uniform Viewbox fits to the screen.</summary>
+    [ObservableProperty] private double _canvasHeight = 1920;
+
     /// <summary>Last-applied display mode ("fullscreen"/"windowed"); the window reads this on load.</summary>
     public string DisplayMode { get; private set; } = "fullscreen";
 
@@ -116,8 +128,14 @@ public partial class HomeViewModel : ObservableObject
         _hideBackground = cfg.HideBackground;
         IdleResetSeconds = cfg.IdleResetSeconds;
 
+        _localSystemName = string.IsNullOrWhiteSpace(cfg.SystemName) ? null : cfg.SystemName!.Trim();
+        _canvasWidth = cfg.CanvasWidth > 0 ? cfg.CanvasWidth : 1080;
+        _canvasHeight = cfg.CanvasHeight > 0 ? cfg.CanvasHeight : 1920;
+        ApplyDisplayName();
+
         _sync = new SyncService(cfg.BaseUrl);
         _sync.SyncTriggered += OnSyncTriggered;
+        _sync.HubConnectionChanged += OnHubConnectionChanged;
 
         Settings = new SettingsViewModel(
             settings, _sync, _pin,
@@ -128,7 +146,38 @@ public partial class HomeViewModel : ObservableObject
             applyBranding: SetBrandingHidden,
             getDisplayName: () => DisplayName,
             getBrandingAvailable: () => (_rawLogo != null, _rawBackground != null),
-            requestExit: () => ExitRequested?.Invoke(this, EventArgs.Empty));
+            requestExit: () => ExitRequested?.Invoke(this, EventArgs.Empty),
+            applySystemName: SetLocalSystemName,
+            applyResolution: SetCanvasSize);
+    }
+
+    /// <summary>Resolve the header name: local override wins, else the server name.</summary>
+    private void ApplyDisplayName()
+    {
+        DisplayName = !string.IsNullOrWhiteSpace(_localSystemName)
+            ? _localSystemName!
+            : (!string.IsNullOrWhiteSpace(_serverDisplayName) ? _serverDisplayName! : "Library Kiosk");
+    }
+
+    /// <summary>Apply a new local system-name override (K2 item 5); empty = use server name.</summary>
+    public void SetLocalSystemName(string? name)
+    {
+        _localSystemName = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
+        ApplyDisplayName();
+    }
+
+    /// <summary>Apply a new design-canvas resolution (K2 item 4); the Viewbox refits.</summary>
+    public void SetCanvasSize(double width, double height)
+    {
+        CanvasWidth = width;
+        CanvasHeight = height;
+    }
+
+    private void OnHubConnectionChanged(object? sender, bool connected)
+    {
+        // Realtime "disconnected" feedback for the settings panel; a (re)connect is
+        // followed by a SyncTriggered -> RefreshAsync -> Apply, which flips it back.
+        if (!connected) _ = OnUi(() => Settings.MarkDisconnected());
     }
 
     /// <summary>Reset the browse view for the next user (idle timeout, fullscreen only).</summary>
@@ -209,7 +258,8 @@ public partial class HomeViewModel : ObservableObject
             case ConnectionState.Connected:
                 BookCount = snap.Meta!.BookCount;
                 LastUpdated = snap.Meta.LastUpdated;
-                if (!string.IsNullOrWhiteSpace(snap.DisplayName)) DisplayName = snap.DisplayName!;
+                if (!string.IsNullOrWhiteSpace(snap.DisplayName)) _serverDisplayName = snap.DisplayName;
+                ApplyDisplayName();
 
                 _rawLogo = snap.Logo;
                 _rawBackground = snap.Background;
@@ -247,6 +297,9 @@ public partial class HomeViewModel : ObservableObject
                 StatusMessage = snap.Message ?? "เชื่อมต่อ Server ไม่ได้";
                 break;
         }
+
+        // Keep the settings panel's connection indicator live after every sync.
+        Settings.RefreshConnectionIndicator();
     }
 
     private void RebuildCategories(IReadOnlyList<string> categories)
@@ -387,6 +440,7 @@ public partial class HomeViewModel : ObservableObject
     public async Task ShutdownAsync()
     {
         _sync.SyncTriggered -= OnSyncTriggered;
+        _sync.HubConnectionChanged -= OnHubConnectionChanged;
         await _sync.DisposeAsync();
     }
 }

@@ -29,6 +29,8 @@ public partial class SettingsViewModel : ObservableObject
     private readonly Func<string> _getDisplayName;
     private readonly Func<(bool logo, bool background)> _getBrandingAvailable;
     private readonly Action _requestExit;
+    private readonly Action<string?> _applySystemName;         // K2 item 5
+    private readonly Action<double, double> _applyResolution;  // K2 item 4 (w, h)
     private readonly AutoStartService _autoStart;
 
     private readonly DispatcherTimer _lockTimer;
@@ -59,9 +61,18 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _connectionStatus = "";
     [ObservableProperty] private string _lastUpdated = "-";
     [ObservableProperty] private bool _isBusy;
+    /// <summary>Realtime connected/disconnected indicator (green/red) — K2 item 3.</summary>
+    [ObservableProperty] private bool _isConnected;
 
     // ---- display ----
     [ObservableProperty] private string _displayName = "";
+    /// <summary>Local per-kiosk system-name override (K2 item 5); blank = use server name.</summary>
+    [ObservableProperty] private string _systemNameInput = "";
+
+    // ---- resolution (K2 item 4) ----
+    [ObservableProperty] private string _resWidthInput = "1080";
+    [ObservableProperty] private string _resHeightInput = "1920";
+    [ObservableProperty] private string _resolutionStatus = "";
     [ObservableProperty] private bool _logoAvailable;
     [ObservableProperty] private bool _backgroundAvailable;
     [ObservableProperty] private bool _hideLogo;
@@ -88,7 +99,9 @@ public partial class SettingsViewModel : ObservableObject
         Action<bool, bool> applyBranding,
         Func<string> getDisplayName,
         Func<(bool logo, bool background)> getBrandingAvailable,
-        Action requestExit)
+        Action requestExit,
+        Action<string?> applySystemName,
+        Action<double, double> applyResolution)
     {
         _settings = settings;
         _sync = sync;
@@ -101,6 +114,8 @@ public partial class SettingsViewModel : ObservableObject
         _getDisplayName = getDisplayName;
         _getBrandingAvailable = getBrandingAvailable;
         _requestExit = requestExit;
+        _applySystemName = applySystemName;
+        _applyResolution = applyResolution;
 
         var exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "";
         _autoStart = new AutoStartService(exePath);
@@ -125,6 +140,10 @@ public partial class SettingsViewModel : ObservableObject
         IsFullscreen = !string.Equals(s.DisplayMode, "windowed", StringComparison.OrdinalIgnoreCase);
         HideLogo = s.HideLogo;
         HideBackground = s.HideBackground;
+        SystemNameInput = s.SystemName ?? "";
+        ResWidthInput = (s.CanvasWidth > 0 ? s.CanvasWidth : 1080).ToString();
+        ResHeightInput = (s.CanvasHeight > 0 ? s.CanvasHeight : 1920).ToString();
+        ResolutionStatus = "";
 
         IsOpen = true;
 
@@ -197,10 +216,12 @@ public partial class SettingsViewModel : ObservableObject
         var s = _settings.Load();
         HideLogo = s.HideLogo;
         HideBackground = s.HideBackground;
+        SystemNameInput = s.SystemName ?? "";
+        ResWidthInput = (s.CanvasWidth > 0 ? s.CanvasWidth : 1080).ToString();
+        ResHeightInput = (s.CanvasHeight > 0 ? s.CanvasHeight : 1920).ToString();
         AutoStartEnabled = _autoStart.IsEnabled();
 
-        var (state, last) = _getStatus();
-        LastUpdated = last;
+        RefreshConnectionIndicator();
     }
 
     // ---- system: auto-start + exit ----
@@ -239,7 +260,7 @@ public partial class SettingsViewModel : ObservableObject
 
             await _sync.RebindAsync(url);
             await _reloadAsync();
-            UpdateConnectionStatus();
+            RefreshConnectionIndicator();
         }
         catch (Exception)
         {
@@ -259,7 +280,7 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             await _reloadAsync();
-            UpdateConnectionStatus();
+            RefreshConnectionIndicator();
             DisplayName = _getDisplayName();
             var (logo, bg) = _getBrandingAvailable();
             LogoAvailable = logo;
@@ -271,16 +292,31 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
-    private void UpdateConnectionStatus()
+    /// <summary>
+    /// Pull the live host status into the connected/disconnected indicator (K2 item 3).
+    /// Called when the panel opens and after every sync (HomeViewModel.Apply) so the dot
+    /// and last-sync time stay live — reuses the existing sync state, no extra polling.
+    /// </summary>
+    public void RefreshConnectionIndicator()
     {
         var (state, last) = _getStatus();
         LastUpdated = last;
+        IsConnected = state == ConnectionState.Connected;
         ConnectionStatus = state switch
         {
-            ConnectionState.Connected => $"เชื่อมต่อสำเร็จ • อัปเดต {last}",
-            ConnectionState.Unlicensed => "เชื่อมต่อได้ แต่เซิร์ฟเวอร์ยังไม่ได้เปิดลิขสิทธิ์",
+            ConnectionState.Connected => $"เชื่อมต่อสำเร็จ • อัปเดตล่าสุด {last}",
+            ConnectionState.Unlicensed => "เชื่อมต่อได้ • เซิร์ฟเวอร์ยังไม่เปิดลิขสิทธิ์",
+            ConnectionState.Loading => "กำลังเชื่อมต่อ…",
             _ => "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ — ตรวจสอบ URL"
         };
+    }
+
+    /// <summary>Realtime hub-drop feedback (K2 item 3): show disconnected immediately. A
+    /// reconnect runs a sync that flips this back via <see cref="RefreshConnectionIndicator"/>.</summary>
+    public void MarkDisconnected()
+    {
+        IsConnected = false;
+        ConnectionStatus = "การเชื่อมต่อหลุด • กำลังเชื่อมต่อใหม่…";
     }
 
     // ---- branding (local hide only; server is never touched) ----
@@ -339,6 +375,59 @@ public partial class SettingsViewModel : ObservableObject
         _settings.Save(s);
 
         _applyDisplayMode(mode);
+    }
+
+    // ---- system name (K2 item 5) ----
+
+    [RelayCommand]
+    private void SaveSystemName()
+    {
+        var name = (SystemNameInput ?? "").Trim();
+
+        var s = _settings.Load();
+        s.SystemName = name.Length == 0 ? null : name;
+        _settings.Save(s);
+
+        _applySystemName(s.SystemName);   // header updates immediately
+        DisplayName = _getDisplayName();  // reflect the resolved name in the panel
+    }
+
+    // ---- resolution (K2 item 4) ----
+
+    [RelayCommand]
+    private void SetPortraitPreset()
+    {
+        ResWidthInput = "1080";
+        ResHeightInput = "1920";
+        ApplyResolution();
+    }
+
+    [RelayCommand]
+    private void ApplyResolution()
+    {
+        if (!int.TryParse((ResWidthInput ?? "").Trim(), out var w) ||
+            !int.TryParse((ResHeightInput ?? "").Trim(), out var h) ||
+            w < 320 || h < 320 || w > 8000 || h > 8000)
+        {
+            ResolutionStatus = "กรอกความกว้าง/สูงเป็นตัวเลข (320–8000)";
+            return;
+        }
+
+        // Landscape (width > height) needs the orientation redesign; reject for now so
+        // the portrait-only UI is never letterboxed into the middle of a wide screen.
+        if (w > h)
+        {
+            ResolutionStatus = "ยังไม่รองรับแนวนอน (กว้าง > สูง) — อยู่ระหว่างออกแบบ";
+            return;
+        }
+
+        var s = _settings.Load();
+        s.CanvasWidth = w;
+        s.CanvasHeight = h;
+        _settings.Save(s);
+
+        _applyResolution(w, h);
+        ResolutionStatus = $"ใช้ความละเอียด {w} × {h} แล้ว";
     }
 
     // ---------------- change PIN ----------------
