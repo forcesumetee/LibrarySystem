@@ -133,7 +133,7 @@ public partial class HomeViewModel : ObservableObject
         _canvasHeight = cfg.CanvasHeight > 0 ? cfg.CanvasHeight : 1920;
         ApplyDisplayName();
 
-        _sync = new SyncService(cfg.BaseUrl);
+        _sync = new SyncService(cfg.BaseUrl, cfg.KioskId);
         _sync.SyncTriggered += OnSyncTriggered;
         _sync.HubConnectionChanged += OnHubConnectionChanged;
 

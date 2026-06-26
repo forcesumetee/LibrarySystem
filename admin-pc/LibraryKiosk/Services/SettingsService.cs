@@ -44,6 +44,7 @@ public sealed class SettingsService
                 if (!File.Exists(_path))
                 {
                     var fresh = new KioskSettings();
+                    EnsureKioskId(fresh);
                     SaveInternal(fresh);
                     KioskLog.Info($"Settings file not found; created defaults at {_path}");
                     return fresh;
@@ -54,8 +55,13 @@ public sealed class SettingsService
                 if (loaded == null)
                 {
                     KioskLog.Warn("Settings deserialized to null; using defaults.");
-                    return new KioskSettings();
+                    var def = new KioskSettings();
+                    EnsureKioskId(def);
+                    return def;
                 }
+
+                // Backfill a stable kiosk id for pre-K3 settings files (persist once).
+                if (EnsureKioskId(loaded)) SaveInternal(loaded);
                 return loaded;
             }
             catch (Exception ex)
@@ -73,6 +79,15 @@ public sealed class SettingsService
         {
             SaveInternal(settings);
         }
+    }
+
+    /// <summary>Assign a stable GUID kiosk id if one is not set yet. Returns true if a
+    /// new id was generated (so the caller can persist it).</summary>
+    private static bool EnsureKioskId(KioskSettings settings)
+    {
+        if (!string.IsNullOrWhiteSpace(settings.KioskId)) return false;
+        settings.KioskId = Guid.NewGuid().ToString("N");
+        return true;
     }
 
     private void SaveInternal(KioskSettings settings)
