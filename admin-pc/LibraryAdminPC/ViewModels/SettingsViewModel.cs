@@ -16,7 +16,7 @@ public class SettingsViewModel : INotifyPropertyChanged
 
     public string ConfigPath => _configService.ConfigPath;
 
-    private string _apiBaseUrl = "http://localhost:5269";
+    private string _apiBaseUrl = "http://localhost:45269";
     public string ApiBaseUrl
     {
         get => _apiBaseUrl;
@@ -83,7 +83,7 @@ public class SettingsViewModel : INotifyPropertyChanged
     {
         var cfg = _configService.Load();
 
-        ApiBaseUrl = string.IsNullOrWhiteSpace(cfg.ApiBaseUrl) ? "http://localhost:5269" : cfg.ApiBaseUrl!;
+        ApiBaseUrl = string.IsNullOrWhiteSpace(cfg.ApiBaseUrl) ? "http://localhost:45269" : cfg.ApiBaseUrl!;
         AdminKey = cfg.AdminKey ?? "";
 
         LogoPreviewPath = ResolveBrandingPath(cfg.LogoFile);
@@ -110,7 +110,7 @@ public class SettingsViewModel : INotifyPropertyChanged
 
         // parse base url to get scheme/port
         var scheme = "http";
-        var port = 5269;
+        var port = 45269;
         var host = "localhost";
 
         if (Uri.TryCreate((ApiBaseUrl ?? "").Trim(), UriKind.Absolute, out var uri))

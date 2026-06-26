@@ -545,7 +545,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         var msg =
             "ยังเชื่อมต่อ API ไม่ได้ (ApiBaseUrl ว่าง/ผิดรูปแบบ หรือ Server ยังไม่รัน)\n\n" +
             $"แก้ไฟล์ตั้งค่าที่: {_configService.ConfigPath}\n" +
-            "ตัวอย่าง:\n{\n  \"ApiBaseUrl\": \"http://192.168.1.105:5269\",\n  \"AdminKey\": \"...\"\n}";
+            "ตัวอย่าง:\n{\n  \"ApiBaseUrl\": \"http://192.168.1.105:45269\",\n  \"AdminKey\": \"...\"\n}";
 
         return new Border
         {

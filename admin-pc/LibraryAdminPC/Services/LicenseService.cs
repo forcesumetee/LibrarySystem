@@ -12,12 +12,12 @@ namespace LibraryAdminPC.Services;
 public sealed class LicenseService
 {
     // 🎯 ชี้เป้าไปที่เซิร์ฟเวอร์หลังบ้าน (Admin-PC Backend)
-    private readonly string _baseUrl = "http://localhost:5269";
+    private readonly string _baseUrl = "http://localhost:45269";
     
     // ข้อความแจ้งเตือนกลาง
     private const string MsgInvalidKey = "Product key ไม่ถูกต้อง";
     private const string MsgCannotValidate = "ไม่สามารถตรวจสอบสิทธิ์ได้ กรุณาติดต่อผู้ดูแล";
-    private const string MsgServerOffline = "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์หลักได้ กรุณาตรวจสอบว่ารันพอร์ต 5269 ไว้หรือไม่";
+    private const string MsgServerOffline = "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์หลักได้ กรุณาตรวจสอบว่ารันพอร์ต 45269 ไว้หรือไม่";
     private const string MsgActivated = "Activate สำเร็จ";
 
     /// <summary>

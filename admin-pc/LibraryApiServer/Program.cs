@@ -16,7 +16,8 @@ using System.Net.Http.Json; // สำหรับสื่อสารกับ 
 var builder = WebApplication.CreateBuilder(args);
 
 // ✅ บังคับให้ Server ฟังทุก IP ในวง LAN (เปิดทางให้ Kiosk คุยได้)
-builder.WebHost.UseUrls("http://0.0.0.0:5269");
+// Default port 45269 (เลี่ยงชนระบบอื่น); ปรับได้ผ่าน config "Urls" (appsettings/env) เผื่ออนาคต.
+builder.WebHost.UseUrls(builder.Configuration["Urls"] ?? "http://0.0.0.0:45269");
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
