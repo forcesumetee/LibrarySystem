@@ -39,7 +39,12 @@
                                 <Border Grid.Row="0" CornerRadius="20,20,0,0" ClipToBounds="True"
                                         Background="{Binding PlaceholderBrush}">
                                     <Grid>
-                                        <Image Source="{Binding Cover}" Stretch="UniformToFill"
+                                        <!-- Grid uses Uniform over the deterministic colour chip (NOT a
+                                             per-card BlurEffect): the whole cover shows with no crop, the
+                                             chip fills any margin, and a 500-card virtualized scroll stays
+                                             smooth. The heavier blurred-background treatment is reserved for
+                                             the one-at-a-time detail modal. -->
+                                        <Image Source="{Binding Cover}" Stretch="Uniform"
                                                Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
                                         <!-- bottom scrim for title legibility -->
                                         <Border VerticalAlignment="Bottom" Height="170">
@@ -207,7 +212,7 @@
         <Viewbox.RenderTransform>
             <ScaleTransform ScaleX="{Binding UiScale}" ScaleY="{Binding UiScale}" />
         </Viewbox.RenderTransform>
-        <Grid x:Name="DesignCanvas" Width="1080" Height="1920" Background="Black">
+        <Grid x:Name="DesignCanvas" Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}" Background="Black">
 
             <!-- Background: branding image over gradient fallback -->
             <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
@@ -492,7 +497,17 @@
                         <Border Grid.Row="0" Height="720" CornerRadius="36,36,0,0" ClipToBounds="True"
                                 Background="{Binding PlaceholderBrush}">
                             <Grid>
+                                <!-- Netflix-style cover: blurred fill behind, full cover in front so
+                                     any aspect ratio shows complete (no crop) and the frame stays full. -->
                                 <Image Source="{Binding Cover}" Stretch="UniformToFill"
+                                       Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}">
+                                    <Image.Effect>
+                                        <BlurEffect Radius="60" KernelType="Gaussian" RenderingBias="Performance" />
+                                    </Image.Effect>
+                                </Image>
+                                <Border Background="#40000000"
+                                        Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
+                                <Image Source="{Binding Cover}" Stretch="Uniform"
                                        Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
                                 <Border VerticalAlignment="Bottom" Height="240">
                                     <Border.Background>
@@ -716,9 +731,24 @@
                                             <Button Grid.Column="1" Content="ซิงก์ตอนนี้" Style="{StaticResource SecondaryButtonStyle}"
                                                     Command="{Binding SyncNowCommand}" Margin="18,0,0,0" />
                                         </Grid>
-                                        <TextBlock Text="{Binding ConnectionStatus}" FontSize="28"
-                                                   Foreground="{StaticResource TextSecondBrush}" Margin="0,18,0,0"
-                                                   TextWrapping="Wrap" />
+                                        <!-- realtime connected/disconnected indicator (K2 item 3) -->
+                                        <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
+                                            <Ellipse Width="22" Height="22" VerticalAlignment="Center" Margin="0,2,14,0">
+                                                <Ellipse.Style>
+                                                    <Style TargetType="Ellipse">
+                                                        <Setter Property="Fill" Value="{StaticResource ErrorBrush}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                                                <Setter Property="Fill" Value="{StaticResource SuccessBrush}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Ellipse.Style>
+                                            </Ellipse>
+                                            <TextBlock Text="{Binding ConnectionStatus}" FontSize="28"
+                                                       Foreground="{StaticResource TextSecondBrush}"
+                                                       VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="700" />
+                                        </StackPanel>
                                     </StackPanel>
                                 </Border>
 
@@ -728,10 +758,23 @@
                                         <TextBlock Text="การแสดงผล" FontWeight="Bold" FontSize="36"
                                                    Foreground="{StaticResource PrimaryBrush}" />
 
-                                        <TextBlock Text="ชื่อระบบ (จากเซิร์ฟเวอร์)" FontSize="28"
-                                                   Foreground="{StaticResource MutedBrush}" Margin="0,22,0,6" />
-                                        <TextBlock Text="{Binding DisplayName}" FontSize="34" FontWeight="SemiBold"
-                                                   Foreground="{StaticResource TextBrush}" TextWrapping="Wrap" />
+                                        <!-- system name: local override per kiosk (K2 item 5) -->
+                                        <TextBlock Text="ชื่อระบบ (เครื่องนี้)" FontSize="28"
+                                                   Foreground="{StaticResource MutedBrush}" Margin="0,22,0,10" />
+                                        <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}"
+                                                BorderThickness="2" CornerRadius="18" Padding="22,0" Height="92">
+                                            <TextBox Text="{Binding SystemNameInput, UpdateSourceTrigger=PropertyChanged}"
+                                                     FontSize="32" Foreground="{StaticResource TextBrush}" Background="Transparent"
+                                                     BorderThickness="0" VerticalContentAlignment="Center" ContextMenu="{x:Null}"
+                                                     CaretBrush="{StaticResource PrimaryBrush}" />
+                                        </Border>
+                                        <Grid Margin="0,14,0,0">
+                                            <TextBlock Text="เว้นว่าง = ใช้ชื่อจากเซิร์ฟเวอร์" FontSize="24"
+                                                       Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
+                                            <Button HorizontalAlignment="Right" Content="บันทึกชื่อ" FontSize="28"
+                                                    Style="{StaticResource SecondaryButtonStyle}"
+                                                    Command="{Binding SaveSystemNameCommand}" />
+                                        </Grid>
 
                                         <!-- logo -->
                                         <Grid Margin="0,28,0,0">
@@ -807,6 +850,59 @@
                                                 </Button.Template>
                                             </Button>
                                         </UniformGrid>
+
+                                        <!-- resolution (K2 item 4): portrait presets + custom W x H -->
+                                        <TextBlock Text="ความละเอียดหน้าจอ (แนวตั้ง)" FontSize="30"
+                                                   Foreground="{StaticResource TextBrush}" Margin="0,26,0,12" />
+                                        <Button Content="1080 × 1920 (มาตรฐานแนวตั้ง)" Command="{Binding SetPortraitPresetCommand}"
+                                                Cursor="Hand" HorizontalAlignment="Stretch">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="M" Background="{StaticResource SurfaceBrush}" CornerRadius="18"
+                                                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" MinHeight="80">
+                                                        <TextBlock Text="{TemplateBinding Content}" FontSize="30" FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsPressed" Value="True">
+                                                            <Setter TargetName="M" Property="Background" Value="{StaticResource PrimaryTintBrush}" />
+                                                            <Setter TargetName="M" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+
+                                        <TextBlock Text="หรือกำหนดเอง (กว้าง × สูง, แนวตั้งเท่านั้น)" FontSize="26"
+                                                   Foreground="{StaticResource MutedBrush}" Margin="0,18,0,10" />
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}"
+                                                    BorderThickness="2" CornerRadius="18" Padding="22,0" Height="88">
+                                                <TextBox Text="{Binding ResWidthInput, UpdateSourceTrigger=PropertyChanged}"
+                                                         FontFamily="{StaticResource MonoFontFamily}" FontSize="32" Foreground="{StaticResource TextBrush}"
+                                                         Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center"
+                                                         ContextMenu="{x:Null}" CaretBrush="{StaticResource PrimaryBrush}" />
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="×" FontSize="34" Foreground="{StaticResource MutedBrush}"
+                                                       VerticalAlignment="Center" Margin="18,0" />
+                                            <Border Grid.Column="2" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}"
+                                                    BorderThickness="2" CornerRadius="18" Padding="22,0" Height="88">
+                                                <TextBox Text="{Binding ResHeightInput, UpdateSourceTrigger=PropertyChanged}"
+                                                         FontFamily="{StaticResource MonoFontFamily}" FontSize="32" Foreground="{StaticResource TextBrush}"
+                                                         Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center"
+                                                         ContextMenu="{x:Null}" CaretBrush="{StaticResource PrimaryBrush}" />
+                                            </Border>
+                                        </Grid>
+                                        <Button Content="ใช้ความละเอียดนี้" Style="{StaticResource SecondaryButtonStyle}" FontSize="28"
+                                                Command="{Binding ApplyResolutionCommand}" HorizontalAlignment="Left" Margin="0,14,0,0" />
+                                        <TextBlock Text="{Binding ResolutionStatus}" FontSize="26"
+                                                   Foreground="{StaticResource TextSecondBrush}" Margin="0,12,0,0"
+                                                   TextWrapping="Wrap" Visibility="{Binding ResolutionStatus, Converter={StaticResource StrToVis}}" />
                                     </StackPanel>
                                 </Border>
 

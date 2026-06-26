@@ -36,11 +36,48 @@ public sealed class SyncService : IAsyncDisposable
     private BitmapSource? _logoCache;
     private BitmapSource? _bgCache;
 
-    // Book-cover cache (keyed by regNo); null value = "already tried, none found".
-    private readonly Dictionary<string, BitmapSource?> _coverCache = new();
+    // Book-cover cache (keyed by regNo). Sha is the server's cover change-token; a
+    // null Image with null Sha means "no cover". Storing the sha lets a sync detect
+    // a changed/added/removed cover and refetch only that one (see ResolveCoverAsync).
+    private sealed class CoverEntry
+    {
+        public BitmapSource? Image;
+        public string? Sha;
+    }
+    private readonly Dictionary<string, CoverEntry> _coverCache = new();
+
+    // Server LastUpdated value at the last cover verification; covers are only
+    // re-verified when this changes (reset on rebind so a new server re-scans).
+    private string? _coverScanStamp;
+
+    /// <summary>True when covers should be re-verified for this server stamp.</summary>
+    public bool CoversNeedVerify(string stamp) => _coverScanStamp != stamp;
+
+    /// <summary>Record that covers were fully verified for this server stamp.</summary>
+    public void MarkCoversScanned(string stamp) => _coverScanStamp = stamp;
 
     /// <summary>Raised on hub "SyncRequested" and on every (re)connect. May fire on a background thread.</summary>
     public event EventHandler? SyncTriggered;
+
+    /// <summary>
+    /// Raised when the live SignalR link goes up (true) or down (false). Reuses the
+    /// hub's own connect/reconnect/close callbacks — no extra polling. The settings
+    /// panel uses this for a realtime connected/disconnected indicator. May fire on a
+    /// background thread.
+    /// </summary>
+    public event EventHandler<bool>? HubConnectionChanged;
+
+    private volatile bool _hubConnected;
+
+    /// <summary>Last known SignalR link state (true = connected).</summary>
+    public bool IsHubConnected => _hubConnected;
+
+    private void SetHubConnected(bool connected)
+    {
+        if (_hubConnected == connected) return;
+        _hubConnected = connected;
+        HubConnectionChanged?.Invoke(this, connected);
+    }
 
     public SyncService(string baseUrl)
     {
@@ -66,6 +103,7 @@ public sealed class SyncService : IAsyncDisposable
             _logoSha = _bgSha = null;
             _logoCache = _bgCache = null;
             _coverCache.Clear();
+            _coverScanStamp = null; // force a cover re-verify against the new server
             _lifetime = new CancellationTokenSource();
         }
         KioskLog.Info($"SyncService rebound to {newBaseUrl}");
@@ -92,9 +130,16 @@ public sealed class SyncService : IAsyncDisposable
             SyncTriggered?.Invoke(this, EventArgs.Empty);
         });
 
+        hub.Reconnecting += _ =>
+        {
+            SetHubConnected(false);
+            return Task.CompletedTask;
+        };
+
         hub.Reconnected += _ =>
         {
             KioskLog.Info("Hub reconnected; triggering catch-up sync.");
+            SetHubConnected(true);
             SyncTriggered?.Invoke(this, EventArgs.Empty);
             return Task.CompletedTask;
         };
@@ -121,6 +166,7 @@ public sealed class SyncService : IAsyncDisposable
             {
                 await hub.StartAsync(token).ConfigureAwait(false);
                 KioskLog.Info($"Hub connected: {_api.BaseUrl}");
+                SetHubConnected(true);
                 // Catch-up sync on connect so we never miss data set before we joined.
                 SyncTriggered?.Invoke(this, EventArgs.Empty);
                 return;
@@ -141,6 +187,7 @@ public sealed class SyncService : IAsyncDisposable
 
     private async Task OnHubClosed(Exception? error)
     {
+        SetHubConnected(false);
         if (_disposed || _stopping) return; // expected close during stop/rebind/dispose
         KioskLog.Warn($"Hub closed ({error?.Message ?? "no error"}); restarting in 5s.");
         try { await Task.Delay(TimeSpan.FromSeconds(5), _lifetime.Token).ConfigureAwait(false); }
@@ -268,23 +315,56 @@ public sealed class SyncService : IAsyncDisposable
     }
 
     /// <summary>
-    /// Fetch + decode a book cover (cache-busted, frozen), memoised per regNo so
-    /// re-filtering/re-syncing never refetches. Returns null when there is no cover.
+    /// Resolve the cover image for <paramref name="regNo"/>, frozen and memoised.
+    ///
+    /// When <paramref name="verify"/> is false the cached image is returned with no
+    /// HTTP at all (the hot path: re-filtering, reconnects, syncs where nothing
+    /// changed). When true — used after an actual server change — a lightweight
+    /// cover/meta call decides the next step: unchanged sha reuses the cached image;
+    /// a changed/new cover is re-downloaded; a removed cover collapses to null
+    /// (placeholder). A failed meta check keeps whatever was cached.
+    ///
+    /// This is the cover analogue of <see cref="ResolveImageAsync"/> for branding,
+    /// and the fix for "cover uploaded from admin never appears until kiosk restart".
     /// </summary>
-    public async Task<BitmapSource?> LoadCoverAsync(string regNo)
+    public async Task<BitmapSource?> ResolveCoverAsync(string regNo, bool verify)
     {
         if (string.IsNullOrWhiteSpace(regNo)) return null;
 
-        lock (_gate)
+        CoverEntry? entry;
+        lock (_gate) { _coverCache.TryGetValue(regNo, out entry); }
+
+        if (!verify)
         {
-            if (_coverCache.TryGetValue(regNo, out var cached)) return cached;
+            return entry?.Image; // cached (image or null); no network
         }
 
         var api = _api;
+        var meta = await api.GetCoverMetaAsync(regNo).ConfigureAwait(false);
+        if (meta == null)
+        {
+            return entry?.Image; // meta check failed; keep what we have
+        }
+
+        var (hasCover, sha) = meta.Value;
+
+        if (!hasCover)
+        {
+            // Cover absent (never had one / just deleted) -> placeholder.
+            lock (_gate) { _coverCache[regNo] = new CoverEntry { Image = null, Sha = null }; }
+            return null;
+        }
+
+        // Unchanged sha and we already hold the image -> reuse, no download.
+        if (entry?.Image != null && entry.Sha == sha)
+        {
+            return entry.Image;
+        }
+
+        // New or changed cover -> download the image once.
         var bytes = await api.GetImageBytesAsync($"api/books/{Uri.EscapeDataString(regNo)}/cover").ConfigureAwait(false);
         var img = ImageLoader.FromBytes(bytes);
-
-        lock (_gate) { _coverCache[regNo] = img; }
+        lock (_gate) { _coverCache[regNo] = new CoverEntry { Image = img, Sha = img != null ? sha : null }; }
         return img;
     }
 
