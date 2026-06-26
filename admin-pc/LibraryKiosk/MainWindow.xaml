@@ -330,7 +330,7 @@
                                         <Button.Template>
                                             <ControlTemplate TargetType="Button">
                                                 <Border x:Name="Chip" CornerRadius="999"
-                                                        Background="{StaticResource SurfaceBrush}"
+                                                        Background="Transparent"
                                                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="2"
                                                         Padding="30,16" MinHeight="64">
                                                     <TextBlock x:Name="ChipText" Text="{Binding Name}" FontWeight="SemiBold"
@@ -427,15 +427,43 @@
                 </Border>
             </Grid>
 
-            <!-- ===================== INITIAL LOADING ===================== -->
+            <!-- ===================== INITIAL LOADING (skeleton) ===================== -->
             <Grid Visibility="{Binding IsInitialLoading, Converter={StaticResource BoolToVis}}">
-                <Border Background="#CC0F1A33" />
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock Text="กำลังโหลดข้อมูลห้องสมุด…" Foreground="White" FontWeight="SemiBold"
-                               FontSize="44" HorizontalAlignment="Center" />
-                    <TextBlock Text="{Binding BaseUrl}" Foreground="#B3FFFFFF" FontSize="28"
-                               FontFamily="{StaticResource MonoFontFamily}" HorizontalAlignment="Center" Margin="0,16,0,0" />
+                <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
+
+                <!-- header placeholder -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Margin="48,46,0,0">
+                    <Border Width="84" Height="84" CornerRadius="20" Background="#33FFFFFF" />
+                    <Border Width="380" Height="46" CornerRadius="12" Background="#33FFFFFF"
+                            VerticalAlignment="Center" Margin="22,0,0,0" />
                 </StackPanel>
+
+                <!-- body panel placeholder -->
+                <Border VerticalAlignment="Bottom" Height="1660" Background="{StaticResource PanelBrush}" CornerRadius="44,44,0,0">
+                    <Grid Margin="44,40,44,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0" Height="116" CornerRadius="26" Background="#0F000000" />
+                        <WrapPanel Grid.Row="1" Margin="0,26,0,0">
+                            <Border CornerRadius="999" Width="140" Height="64" Background="#0F000000" Margin="0,0,16,16" />
+                            <Border CornerRadius="999" Width="200" Height="64" Background="#0F000000" Margin="0,0,16,16" />
+                            <Border CornerRadius="999" Width="170" Height="64" Background="#0F000000" Margin="0,0,16,16" />
+                            <Border CornerRadius="999" Width="220" Height="64" Background="#0F000000" Margin="0,0,16,16" />
+                            <Border CornerRadius="999" Width="150" Height="64" Background="#0F000000" Margin="0,0,16,16" />
+                        </WrapPanel>
+                        <UniformGrid Grid.Row="2" Columns="3" Margin="-12,30,-12,0" VerticalAlignment="Top">
+                            <Border CornerRadius="20" Height="500" Background="#0F000000" Margin="12" />
+                            <Border CornerRadius="20" Height="500" Background="#0F000000" Margin="12" />
+                            <Border CornerRadius="20" Height="500" Background="#0F000000" Margin="12" />
+                            <Border CornerRadius="20" Height="500" Background="#0F000000" Margin="12" />
+                            <Border CornerRadius="20" Height="500" Background="#0F000000" Margin="12" />
+                            <Border CornerRadius="20" Height="500" Background="#0F000000" Margin="12" />
+                        </UniformGrid>
+                    </Grid>
+                </Border>
             </Grid>
 
             <!-- ===================== ERROR (unreachable) ===================== -->
@@ -444,8 +472,19 @@
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="820">
                     <Border Width="200" Height="200" CornerRadius="100" Background="#1FFFFFFF"
                             BorderBrush="#33FFFFFF" BorderThickness="1" HorizontalAlignment="Center">
-                        <TextBlock Text="!" Foreground="White" FontWeight="Bold" FontSize="120"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <!-- wifi-off: signal arcs + dot with a diagonal slash -->
+                        <Viewbox Width="104" Height="104" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Canvas Width="24" Height="24">
+                                <Path Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      Opacity="0.92" Data="M2,9 a14,14 0 0 1 20,0" />
+                                <Path Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      Opacity="0.92" Data="M6,13 a9,9 0 0 1 12,0" />
+                                <Path Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      Opacity="0.92" Data="M9.5,16.5 a4,4 0 0 1 5,0" />
+                                <Ellipse Canvas.Left="10.6" Canvas.Top="18.4" Width="2.8" Height="2.8" Fill="White" />
+                                <Line X1="3" Y1="3" X2="21" Y2="21" Stroke="White" StrokeThickness="2.2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                            </Canvas>
+                        </Viewbox>
                     </Border>
                     <TextBlock Text="เชื่อมต่อเซิร์ฟเวอร์ไม่ได้" Foreground="White" FontWeight="Bold"
                                FontSize="52" HorizontalAlignment="Center" Margin="0,40,0,0" />
