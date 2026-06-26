@@ -79,9 +79,13 @@ public sealed class SyncService : IAsyncDisposable
         HubConnectionChanged?.Invoke(this, connected);
     }
 
-    public SyncService(string baseUrl)
+    // Stable kiosk id sent on the hub connect query so the server counts distinct kiosks (K3).
+    private readonly string _kioskId;
+
+    public SyncService(string baseUrl, string? kioskId = null)
     {
         _api = new ApiClient(baseUrl);
+        _kioskId = string.IsNullOrWhiteSpace(kioskId) ? "" : kioskId.Trim();
     }
 
     public string BaseUrl => _api.BaseUrl;
@@ -114,7 +118,12 @@ public sealed class SyncService : IAsyncDisposable
     {
         if (_disposed) return Task.CompletedTask;
 
-        var url = $"{_api.BaseUrl}/hubs/library";
+        // K3: identify this connection as a kiosk (+ stable id) on the query string so the
+        // server can count it. The query rides along on every automatic reconnect too.
+        var url = $"{_api.BaseUrl}/hubs/library?client=kiosk";
+        if (!string.IsNullOrEmpty(_kioskId))
+            url += $"&kioskId={Uri.EscapeDataString(_kioskId)}";
+
         var hub = new HubConnectionBuilder()
             .WithUrl(url)
             .WithAutomaticReconnect(new[]
@@ -123,6 +132,10 @@ public sealed class SyncService : IAsyncDisposable
                 TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10)
             })
             .Build();
+
+        // Ping a bit more often than the default 15s so the server's 20s ClientTimeout
+        // detects an ungracefully-killed kiosk within ~20s (still tiny bandwidth).
+        hub.KeepAliveInterval = TimeSpan.FromSeconds(8);
 
         hub.On("SyncRequested", () =>
         {

@@ -10,6 +10,10 @@ public sealed class KioskSettings
     /// <summary>Library API server base URL (HTTP + SignalR origin).</summary>
     public string BaseUrl { get; set; } = DefaultBaseUrl;
 
+    /// <summary>Stable per-kiosk id (GUID, generated once) so the server can count
+    /// distinct kiosks regardless of reconnects. Sent on the hub connect query (K3).</summary>
+    public string? KioskId { get; set; }
+
     // --- Admin PIN (Phase 5). PBKDF2-HMAC-SHA256, 256-bit, base64 salt/hash. ---
     public string? PinHash { get; set; }
     public string? PinSalt { get; set; }
