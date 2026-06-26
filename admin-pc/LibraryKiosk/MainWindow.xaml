@@ -39,7 +39,12 @@
                                 <Border Grid.Row="0" CornerRadius="20,20,0,0" ClipToBounds="True"
                                         Background="{Binding PlaceholderBrush}">
                                     <Grid>
-                                        <Image Source="{Binding Cover}" Stretch="UniformToFill"
+                                        <!-- Grid uses Uniform over the deterministic colour chip (NOT a
+                                             per-card BlurEffect): the whole cover shows with no crop, the
+                                             chip fills any margin, and a 500-card virtualized scroll stays
+                                             smooth. The heavier blurred-background treatment is reserved for
+                                             the one-at-a-time detail modal. -->
+                                        <Image Source="{Binding Cover}" Stretch="Uniform"
                                                Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
                                         <!-- bottom scrim for title legibility -->
                                         <Border VerticalAlignment="Bottom" Height="170">
@@ -492,7 +497,17 @@
                         <Border Grid.Row="0" Height="720" CornerRadius="36,36,0,0" ClipToBounds="True"
                                 Background="{Binding PlaceholderBrush}">
                             <Grid>
+                                <!-- Netflix-style cover: blurred fill behind, full cover in front so
+                                     any aspect ratio shows complete (no crop) and the frame stays full. -->
                                 <Image Source="{Binding Cover}" Stretch="UniformToFill"
+                                       Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}">
+                                    <Image.Effect>
+                                        <BlurEffect Radius="60" KernelType="Gaussian" RenderingBias="Performance" />
+                                    </Image.Effect>
+                                </Image>
+                                <Border Background="#40000000"
+                                        Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
+                                <Image Source="{Binding Cover}" Stretch="Uniform"
                                        Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
                                 <Border VerticalAlignment="Bottom" Height="240">
                                     <Border.Background>
