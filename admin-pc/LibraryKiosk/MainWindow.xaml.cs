@@ -103,7 +103,27 @@ public partial class MainWindow : Window
     private void OnIdleTick(object? sender, EventArgs e)
     {
         _idleTimer.Stop();
-        _vm.ResetForIdle();
+        // Idle → reset the grid for the next user and raise the Welcome overlay.
+        _vm.ShowWelcome();
+    }
+
+    // ---------------- welcome overlay ----------------
+
+    /// <summary>Tap anywhere on the Welcome backdrop → enter the (already reset) grid.</summary>
+    private void Welcome_Dismiss(object sender, InputEventArgs e) => _vm.DismissWelcome();
+
+    /// <summary>Tap the Welcome search box → enter the grid and focus the real search field
+    /// so the user can type immediately.</summary>
+    private void Welcome_TapSearch(object sender, InputEventArgs e)
+    {
+        e.Handled = true;
+        _vm.DismissWelcome();
+        // Let the dismiss/layout settle, then focus the grid's search box.
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            SearchBox.Focus();
+            Keyboard.Focus(SearchBox);
+        }), DispatcherPriority.Input);
     }
 
     private void OnScrollResetRequested(object? sender, EventArgs e)

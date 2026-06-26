@@ -67,6 +67,10 @@ public partial class HomeViewModel : ObservableObject
     [ObservableProperty] private bool _isUnlicensedVisible;
     [ObservableProperty] private bool _isEmpty;
 
+    /// <summary>Welcome idle screen overlay (shown after idle, dismissed on any touch).
+    /// Default false so the kiosk opens straight to the grid.</summary>
+    [ObservableProperty] private bool _isWelcomeVisible;
+
     // ---- search / filter ----
     [ObservableProperty] private string _query = "";
     private const int GridColumns = 3;
@@ -189,6 +193,28 @@ public partial class HomeViewModel : ObservableObject
         Query = "";
         SelectCategory(AllCategory);
         ScrollResetRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    // ---------------- welcome idle screen ----------------
+
+    /// <summary>Idle timeout: reset the browse state for the next user (so the grid behind
+    /// is clean) and raise the Welcome overlay. Reuses the existing idle pipeline — called
+    /// from the window's idle tick instead of <see cref="ResetForIdle"/>.</summary>
+    public void ShowWelcome()
+    {
+        ResetForIdle();
+        IsWelcomeVisible = true;
+    }
+
+    /// <summary>Any touch on the Welcome overlay dismisses it back to the (already reset) grid.</summary>
+    public void DismissWelcome() => IsWelcomeVisible = false;
+
+    /// <summary>Tapping a category chip on the Welcome overlay enters the grid filtered to it.</summary>
+    [RelayCommand]
+    private void WelcomeSelectCategory(string? category)
+    {
+        IsWelcomeVisible = false;
+        SelectCategory(category);
     }
 
     private void ApplyDisplayMode(string mode)
