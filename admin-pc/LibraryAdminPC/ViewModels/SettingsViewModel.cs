@@ -234,6 +234,40 @@ public class SettingsViewModel : INotifyPropertyChanged
         }
     }
 
+    // Reset the admin PIN on every connected kiosk (X-Admin-Key required by the server).
+    // Mirrors TestConnectionAsync: build a client from the current fields, call the API,
+    // surface success/failure via Message/Error. The View asks for confirmation first.
+    public async Task ResetKioskPinAsync()
+    {
+        if (IsLoading) return;
+
+        try
+        {
+            IsLoading = true;
+            Error = null;
+            Message = null;
+
+            var cfg = new AppConfig
+            {
+                ApiBaseUrl = (ApiBaseUrl ?? "").Trim(),
+                AdminKey = (AdminKey ?? "").Trim()
+            };
+
+            var api = new ApiClient(cfg);
+            var pushed = await api.ResetKioskPinAsync();
+            Message = $"รีเซ็ต PIN แล้ว • ส่งไปยังจอ Kiosk {pushed} จอ (PIN กลับเป็น 1234 — ตั้งใหม่ที่จอ)";
+        }
+        catch (Exception ex)
+        {
+            Error = "รีเซ็ต PIN ไม่สำเร็จ: " + ex.Message
+                + "\n(ต้องตั้ง AdminKey ให้ตรงกันทั้งฝั่ง Server และ Admin)";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
     public async Task TestConnectionAsync()
     {
         if (IsLoading) return;
