@@ -7,29 +7,61 @@
         SizeToContent="WidthAndHeight"
         Background="{StaticResource BackgroundBrush}"
         FontFamily="{StaticResource AppFontFamily}">
-    <Border Style="{StaticResource CardStyle}" Margin="20" Padding="24" Width="420">
+    <Border Style="{StaticResource CardStyle}" Margin="20" Padding="24" Width="560">
         <StackPanel>
             <TextBlock Text="แก้ไขข้อมูลหนังสือ" FontSize="18" FontWeight="SemiBold"
                        Foreground="{StaticResource TextBrush}"/>
             <TextBlock x:Name="TxtRegNoHint" Text="รหัส: -"
-                       Foreground="{StaticResource TextSecondBrush}" FontSize="12" Margin="0,4,0,0"/>
+                       Foreground="{StaticResource TextSecondBrush}" FontSize="12" Margin="0,4,0,16"/>
 
-            <TextBlock Text="ชื่อหนังสือ" Margin="0,16,0,5" Foreground="{StaticResource TextSecondBrush}" FontSize="13"/>
-            <TextBox x:Name="TxtTitle" Style="{StaticResource InputTextBoxStyle}"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="160"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-            <TextBlock Text="หมวดหมู่" Margin="0,12,0,5" Foreground="{StaticResource TextSecondBrush}" FontSize="13"/>
-            <TextBox x:Name="TxtCategory" Style="{StaticResource InputTextBoxStyle}"/>
+                <!-- cover management -->
+                <StackPanel Grid.Column="0" Margin="0,0,18,0">
+                    <TextBlock Text="รูปหน้าปก" FontSize="12" Foreground="{StaticResource TextSecondBrush}" Margin="0,0,0,6"/>
+                    <Border Height="200" CornerRadius="10" Background="{StaticResource SurfaceAltBrush}"
+                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" ClipToBounds="True">
+                        <Grid>
+                            <Image x:Name="ImgCover" Stretch="UniformToFill"/>
+                            <TextBlock x:Name="TxtNoCover" Text="ยังไม่มีรูปปก"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="{StaticResource MutedBrush}" FontSize="12"/>
+                        </Grid>
+                    </Border>
+                    <Button x:Name="BtnChangeCover" Content="เปลี่ยนรูปปก"
+                            Style="{StaticResource PrimaryButtonStyle}" Margin="0,10,0,0"
+                            Click="BtnChangeCover_Click"/>
+                    <Button x:Name="BtnClearCover" Content="ล้างรูปปก"
+                            Style="{StaticResource DangerOutlineButtonStyle}" Margin="0,8,0,0"
+                            Click="BtnClearCover_Click"/>
+                    <TextBlock x:Name="TxtCoverStatus" Text="" TextWrapping="Wrap" FontSize="11"
+                               Foreground="{StaticResource MutedBrush}" Margin="0,8,0,0"/>
+                </StackPanel>
 
-            <TextBlock Text="สำนักพิมพ์" Margin="0,12,0,5" Foreground="{StaticResource TextSecondBrush}" FontSize="13"/>
-            <TextBox x:Name="TxtPublisher" Style="{StaticResource InputTextBoxStyle}"/>
+                <!-- fields -->
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="ชื่อหนังสือ" Margin="0,0,0,5" Foreground="{StaticResource TextSecondBrush}" FontSize="13"/>
+                    <TextBox x:Name="TxtTitle" Style="{StaticResource InputTextBoxStyle}"/>
 
-            <TextBlock Text="ชั้น" Margin="0,12,0,5" Foreground="{StaticResource TextSecondBrush}" FontSize="13"/>
-            <TextBox x:Name="TxtShelf" Style="{StaticResource InputTextBoxStyle}"/>
+                    <TextBlock Text="หมวดหมู่" Margin="0,12,0,5" Foreground="{StaticResource TextSecondBrush}" FontSize="13"/>
+                    <TextBox x:Name="TxtCategory" Style="{StaticResource InputTextBoxStyle}"/>
 
-            <TextBlock x:Name="TxtError" Foreground="{StaticResource ErrorTextBrush}" FontSize="12"
-                       Margin="0,10,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+                    <TextBlock Text="สำนักพิมพ์" Margin="0,12,0,5" Foreground="{StaticResource TextSecondBrush}" FontSize="13"/>
+                    <TextBox x:Name="TxtPublisher" Style="{StaticResource InputTextBoxStyle}"/>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+                    <TextBlock Text="ชั้น" Margin="0,12,0,5" Foreground="{StaticResource TextSecondBrush}" FontSize="13"/>
+                    <TextBox x:Name="TxtShelf" Style="{StaticResource InputTextBoxStyle}"/>
+
+                    <TextBlock x:Name="TxtError" Foreground="{StaticResource ErrorTextBrush}" FontSize="12"
+                               Margin="0,10,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+                </StackPanel>
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0">
                 <Button Content="ยกเลิก" Style="{StaticResource SecondaryButtonStyle}"
                         MinWidth="96" Margin="0,0,10,0" IsCancel="True"/>
                 <Button Content="บันทึก" Style="{StaticResource PrimaryButtonStyle}"

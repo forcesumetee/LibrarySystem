@@ -54,15 +54,15 @@ public partial class BooksView : UserControl
     {
         try
         {
-            TxtCoverStatus.Text = "กำลังโหลดข้อมูล...";
+            TxtStatus.Text = "กำลังโหลดข้อมูล...";
             _all = await _api.GetBooksAsync();
             BuildCategory();
             ApplyFilter();
-            TxtCoverStatus.Text = $"โหลดแล้ว {_all.Count} รายการ";
+            TxtStatus.Text = "";
         }
         catch (Exception ex)
         {
-            TxtCoverStatus.Text = $"โหลดไม่สำเร็จ: {ex.Message}";
+            TxtStatus.Text = $"โหลดไม่สำเร็จ: {ex.Message}";
         }
     }
 
@@ -141,121 +141,6 @@ public partial class BooksView : UserControl
     private async void BtnRefresh_Click(object sender, RoutedEventArgs e)
     {
         await ReloadAsync();
-        await LoadSelectedCoverPreviewAsync();
-    }
-
-    private async void BooksGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        await LoadSelectedCoverPreviewAsync();
-    }
-
-    private BookDto? SelectedBook => BooksGrid.SelectedItem as BookDto;
-
-    private async Task LoadSelectedCoverPreviewAsync()
-    {
-        var b = SelectedBook;
-        if (b == null)
-        {
-            TxtSelectedReg.Text = "ยังไม่ได้เลือกหนังสือ";
-            BtnUploadCover.IsEnabled = false;
-            BtnDeleteCover.IsEnabled = false;
-            ImgCover.Source = null;
-            TxtNoCover.Visibility = Visibility.Visible;
-            return;
-        }
-
-        TxtSelectedReg.Text = $"รหัส: {b.RegNo}";
-        BtnUploadCover.IsEnabled = true;
-        BtnDeleteCover.IsEnabled = true;
-
-        try
-        {
-            TxtCoverStatus.Text = "กำลังโหลดรูปปกจาก Server...";
-            var bytes = await _api.GetBookCoverBytesAsync(b.RegNo);
-
-            if (bytes == null || bytes.Length == 0)
-            {
-                ImgCover.Source = null;
-                TxtNoCover.Visibility = Visibility.Visible;
-                TxtCoverStatus.Text = "ยังไม่มีรูปปกใน Server";
-                return;
-            }
-
-            ImgCover.Source = BytesToBitmap(bytes);
-            TxtNoCover.Visibility = Visibility.Collapsed;
-            TxtCoverStatus.Text = "แสดงรูปปกจาก Server";
-        }
-        catch (Exception ex)
-        {
-            ImgCover.Source = null;
-            TxtNoCover.Visibility = Visibility.Visible;
-            TxtCoverStatus.Text = $"โหลดรูปปกไม่สำเร็จ: {ex.Message}";
-        }
-    }
-
-    private static BitmapImage BytesToBitmap(byte[] bytes)
-    {
-        using var ms = new MemoryStream(bytes);
-        var img = new BitmapImage();
-        img.BeginInit();
-        img.CacheOption = BitmapCacheOption.OnLoad;
-        img.StreamSource = ms;
-        img.EndInit();
-        img.Freeze();
-        return img;
-    }
-
-    private async void BtnUploadCover_Click(object sender, RoutedEventArgs e)
-    {
-        var b = SelectedBook;
-        if (b == null) return;
-
-        var dlg = new OpenFileDialog
-        {
-            Title = "เลือกไฟล์รูปปก",
-            Filter = "Image Files|*.png;*.jpg;*.jpeg;*.webp|All Files|*.*",
-            Multiselect = false
-        };
-
-        if (dlg.ShowDialog() != true) return;
-
-        try
-        {
-            TxtCoverStatus.Text = "กำลังอัปโหลดรูปปก...";
-            await _api.UploadBookCoverAsync(b.RegNo, dlg.FileName);
-
-            TxtCoverStatus.Text = "อัปโหลดสำเร็จ";
-            await LoadSelectedCoverPreviewAsync();
-        }
-        catch (Exception ex)
-        {
-            TxtCoverStatus.Text = $"อัปโหลดไม่สำเร็จ: {ex.Message}";
-        }
-    }
-
-    private async void BtnDeleteCover_Click(object sender, RoutedEventArgs e)
-    {
-        var b = SelectedBook;
-        if (b == null) return;
-
-        if (MessageBox.Show($"ต้องการล้างรูปปกของ {b.RegNo} ใช่หรือไม่?",
-                "ยืนยัน",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question) != MessageBoxResult.Yes)
-            return;
-
-        try
-        {
-            TxtCoverStatus.Text = "กำลังลบรูปปก...";
-            await _api.DeleteBookCoverAsync(b.RegNo);
-
-            TxtCoverStatus.Text = "ลบรูปปกแล้ว";
-            await LoadSelectedCoverPreviewAsync();
-        }
-        catch (Exception ex)
-        {
-            TxtCoverStatus.Text = $"ลบไม่สำเร็จ: {ex.Message}";
-        }
     }
 
     // ============================================================
@@ -295,6 +180,9 @@ public partial class BooksView : UserControl
         TxtPageNum.Text = $"หน้า {_currentPage}/{totalPages}";
         BtnPrevPage.IsEnabled = _currentPage > 1;
         BtnNextPage.IsEnabled = _currentPage < totalPages;
+
+        // empty state when there are no results (layout stays stable via MinHeight)
+        TxtEmpty.Visibility = total == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void BtnPrevPage_Click(object sender, RoutedEventArgs e)
@@ -419,13 +307,20 @@ public partial class BooksView : UserControl
 
         try
         {
-            var dlg = new EditBookDialog(b) { Owner = Window.GetWindow(this) };
-            if (dlg.ShowDialog() != true || dlg.Result == null) return;
+            // Edit dialog also manages the cover (change/clear apply immediately on the server).
+            var dlg = new EditBookDialog(b, _api) { Owner = Window.GetWindow(this) };
+            var saved = dlg.ShowDialog() == true && dlg.Result != null;
 
-            TxtCoverStatus.Text = "กำลังบันทึกการแก้ไข...";
-            await _api.UpdateBookAsync(b.RegNo, dlg.Result);
-            TxtCoverStatus.Text = $"แก้ไขแล้ว: {b.RegNo}";
-            await ReloadAsync();
+            if (saved)
+            {
+                TxtStatus.Text = "กำลังบันทึกการแก้ไข...";
+                await _api.UpdateBookAsync(b.RegNo, dlg.Result!);
+                TxtStatus.Text = $"แก้ไขแล้ว: {b.RegNo}";
+            }
+
+            // refresh if the title was saved or the cover changed in the dialog
+            if (saved || dlg.CoverChanged)
+                await ReloadAsync();
         }
         catch (Exception ex)
         {
@@ -437,16 +332,16 @@ public partial class BooksView : UserControl
     {
         if ((sender as FrameworkElement)?.DataContext is not BookDto b) return;
 
-        if (MessageBox.Show(
-                $"ต้องการลบหนังสือ {b.RegNo} — {b.Title} ใช่หรือไม่?\n(รูปปกที่ผูกกับเล่มนี้จะถูกลบด้วย)",
-                "ยืนยันการลบ", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+        if (!ConfirmDialog.Ask(Window.GetWindow(this), "ยืนยันการลบ",
+                $"ต้องการลบหนังสือ {b.RegNo} — {b.Title} ใช่หรือไม่? (รูปปกที่ผูกกับเล่มนี้จะถูกลบด้วย)",
+                "ลบ"))
             return;
 
         try
         {
-            TxtCoverStatus.Text = "กำลังลบหนังสือ...";
+            TxtStatus.Text = "กำลังลบหนังสือ...";
             await _api.DeleteBookAsync(b.RegNo);
-            TxtCoverStatus.Text = $"ลบแล้ว: {b.RegNo}";
+            TxtStatus.Text = $"ลบแล้ว: {b.RegNo}";
             await ReloadAsync();
         }
         catch (Exception ex)
