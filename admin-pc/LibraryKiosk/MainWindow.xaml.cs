@@ -120,11 +120,13 @@ public partial class MainWindow : Window
     {
         e.Handled = true;
         _vm.DismissWelcome();
-        // Let the dismiss/layout settle, then focus the grid's search box.
+        // Let the dismiss/layout settle, then focus the active grid's search box
+        // (portrait vs landscape root-swap).
         Dispatcher.BeginInvoke(new Action(() =>
         {
-            SearchBox.Focus();
-            Keyboard.Focus(SearchBox);
+            var box = _vm.IsLandscape ? SearchBoxL : SearchBox;
+            box.Focus();
+            Keyboard.Focus(box);
         }), DispatcherPriority.Input);
     }
 
