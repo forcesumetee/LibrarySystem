@@ -398,7 +398,6 @@
             <!-- Background: branding image over gradient fallback -->
             <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
             <Image Source="{Binding BackgroundImage}" Stretch="UniformToFill"
-                   Opacity="{Binding BackgroundOpacity}"
                    Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}" />
             <Border Background="#33000000"
                     Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}" />
@@ -442,8 +441,13 @@
                             Command="{Binding OpenSettingsCommand}" />
                 </Grid>
 
-                <!-- Body panel -->
-                <Border Grid.Row="1" Background="{StaticResource PanelBrush}" CornerRadius="44,44,0,0">
+                <!-- Body panel. Fill is its own brush so the opacity slider fades only the
+                     panel surface (branding shows through) — the search/chips/cards on top
+                     keep their own opaque brushes and never fade with it. -->
+                <Border Grid.Row="1" CornerRadius="44,44,0,0">
+                    <Border.Background>
+                        <SolidColorBrush Color="{StaticResource PanelColor}" Opacity="{Binding BackgroundOpacity}" />
+                    </Border.Background>
                     <Grid Margin="44,40,44,0">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -998,8 +1002,12 @@
                                 Command="{Binding OpenSettingsCommand}" />
                     </Grid>
 
-                    <!-- Body panel -->
-                    <Border Grid.Row="1" Background="{StaticResource PanelBrush}" CornerRadius="44,44,0,0">
+                    <!-- Body panel. Fill is its own brush so the opacity slider fades only the
+                         panel surface (branding shows through) — content on top stays opaque. -->
+                    <Border Grid.Row="1" CornerRadius="44,44,0,0">
+                        <Border.Background>
+                            <SolidColorBrush Color="{StaticResource PanelColor}" Opacity="{Binding BackgroundOpacity}" />
+                        </Border.Background>
                         <Grid Margin="64,40,64,0">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
@@ -1736,9 +1744,9 @@
                                                     Visibility="{Binding HideBackground, Converter={StaticResource BoolToVis}}" />
                                         </Grid>
 
-                                        <!-- background opacity: fade a busy background so cards/text read clearly -->
+                                        <!-- panel opacity: fade the book-list surface so the branding shows through -->
                                         <Grid Margin="0,22,0,0">
-                                            <TextBlock Text="ความเข้มภาพพื้นหลัง" FontSize="30" Foreground="{StaticResource TextBrush}" />
+                                            <TextBlock Text="ความโปร่งใสพื้นหลังรายการ" FontSize="30" Foreground="{StaticResource TextBrush}" />
                                             <TextBlock HorizontalAlignment="Right" FontFamily="{StaticResource MonoFontFamily}"
                                                        FontSize="30" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"
                                                        Text="{Binding BackgroundOpacityPercent, StringFormat={}{0:0}%}" />

@@ -59,8 +59,9 @@ public partial class HomeViewModel : ObservableObject
     [ObservableProperty] private BitmapSource? _backgroundImage;
     [ObservableProperty] private bool _hasBackground;
     [ObservableProperty] private bool _hasLogo;
-    /// <summary>Opacity applied to the background image element (0.2–1.0). Local per-kiosk
-    /// setting; only the background fades — cards/text stay fully opaque.</summary>
+    /// <summary>Opacity applied to the book-list panel surface (0.2–1.0). Local per-kiosk
+    /// setting; only the panel fill fades (branding shows through) — the search/chips/cards
+    /// on top stay fully opaque.</summary>
     [ObservableProperty] private double _backgroundOpacity = 1.0;
 
     // ---- visible-screen flags ----

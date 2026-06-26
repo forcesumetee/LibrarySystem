@@ -50,10 +50,11 @@ public sealed class KioskSettings
     public bool HideLogo { get; set; }
     public bool HideBackground { get; set; }
 
-    /// <summary>Opacity of the branding background image on THIS kiosk only (0.2–1.0).
-    /// Lets the operator fade a busy background so the cards/text read more clearly.
-    /// Default 1.0 = current behaviour; older settings files without this field load
-    /// as 1.0 (System.Text.Json keeps the property initializer when the key is absent).</summary>
+    /// <summary>Opacity of the book-list panel surface on THIS kiosk only (0.2–1.0).
+    /// Fading the panel lets the branding background show through behind the list, while
+    /// the search/chips/cards on top stay fully opaque. Default 1.0 = current behaviour;
+    /// older settings files without this field load as 1.0 (System.Text.Json keeps the
+    /// property initializer when the key is absent).</summary>
     public double BackgroundOpacity { get; set; } = 1.0;
 
     // --- Kiosk lockdown / polish (Phase 6). ---
