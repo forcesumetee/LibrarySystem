@@ -322,6 +322,48 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+
+        <!-- Category chip button visual (shared by the portrait + landscape browse).
+             Own SolidColorBrush instances so fill/border/text animate on (de)select. -->
+        <ControlTemplate x:Key="ChipButtonTemplate" TargetType="Button">
+            <Border x:Name="Chip" CornerRadius="16" BorderThickness="2"
+                    Padding="30,16" MinHeight="64">
+                <Border.Background>
+                    <SolidColorBrush Color="Transparent" />
+                </Border.Background>
+                <Border.BorderBrush>
+                    <SolidColorBrush Color="{StaticResource BorderColor}" />
+                </Border.BorderBrush>
+                <TextBlock x:Name="ChipText" Text="{Binding Name}" FontWeight="SemiBold"
+                           FontSize="32" VerticalAlignment="Center">
+                    <TextBlock.Foreground>
+                        <SolidColorBrush Color="{StaticResource PrimaryColor}" />
+                    </TextBlock.Foreground>
+                </TextBlock>
+            </Border>
+            <ControlTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
+                                <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
+                                <ColorAnimation Storyboard.TargetName="ChipText" Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)" To="White" Duration="0:0:0.18" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                    <DataTrigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="Transparent" Duration="0:0:0.18" />
+                                <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="{StaticResource BorderColor}" Duration="0:0:0.18" />
+                                <ColorAnimation Storyboard.TargetName="ChipText" Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.ExitActions>
+                </DataTrigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
     </Window.Resources>
 
     <!-- ============================================================
@@ -457,53 +499,9 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Button Margin="0,0,16,16" Cursor="Hand"
+                                            Template="{StaticResource ChipButtonTemplate}"
                                             Command="{Binding DataContext.SelectCategoryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            CommandParameter="{Binding Name}">
-                                        <Button.Template>
-                                            <ControlTemplate TargetType="Button">
-                                                <!-- own SolidColorBrush instances (not the frozen shared
-                                                     resources) so the fill/border/text colours can animate
-                                                     smoothly when the chip is (de)selected -->
-                                                <Border x:Name="Chip" CornerRadius="16" BorderThickness="2"
-                                                        Padding="30,16" MinHeight="64">
-                                                    <Border.Background>
-                                                        <SolidColorBrush Color="Transparent" />
-                                                    </Border.Background>
-                                                    <Border.BorderBrush>
-                                                        <SolidColorBrush Color="{StaticResource BorderColor}" />
-                                                    </Border.BorderBrush>
-                                                    <TextBlock x:Name="ChipText" Text="{Binding Name}" FontWeight="SemiBold"
-                                                               FontSize="32" VerticalAlignment="Center">
-                                                        <TextBlock.Foreground>
-                                                            <SolidColorBrush Color="{StaticResource PrimaryColor}" />
-                                                        </TextBlock.Foreground>
-                                                    </TextBlock>
-                                                </Border>
-                                                <ControlTemplate.Triggers>
-                                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                        <DataTrigger.EnterActions>
-                                                            <BeginStoryboard>
-                                                                <Storyboard>
-                                                                    <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
-                                                                    <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
-                                                                    <ColorAnimation Storyboard.TargetName="ChipText" Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)" To="White" Duration="0:0:0.18" />
-                                                                </Storyboard>
-                                                            </BeginStoryboard>
-                                                        </DataTrigger.EnterActions>
-                                                        <DataTrigger.ExitActions>
-                                                            <BeginStoryboard>
-                                                                <Storyboard>
-                                                                    <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="Transparent" Duration="0:0:0.18" />
-                                                                    <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="{StaticResource BorderColor}" Duration="0:0:0.18" />
-                                                                    <ColorAnimation Storyboard.TargetName="ChipText" Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
-                                                                </Storyboard>
-                                                            </BeginStoryboard>
-                                                        </DataTrigger.ExitActions>
-                                                    </DataTrigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </Button.Template>
-                                    </Button>
+                                            CommandParameter="{Binding Name}" />
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -1492,15 +1490,176 @@
                        Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}" />
                 <Border Background="#33000000"
                         Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}" />
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <TextBlock Text="โหมดแนวนอน (กำลังพัฒนา — L2-L4)" Foreground="#CCFFFFFF" FontSize="44"
-                               FontWeight="Bold" HorizontalAlignment="Center" />
-                    <TextBlock Text="{Binding CanvasWidth, StringFormat=canvas {0} x }" Foreground="#80FFFFFF"
-                               FontSize="26" HorizontalAlignment="Center" Margin="0,12,0,0" />
-                    <!-- L1-temp: round-trip back to portrait (placeholder replaced in L4) -->
-                    <Button Content="← กลับแนวตั้ง" Command="{Binding Settings.SetPortraitPresetCommand}"
-                            Style="{StaticResource SecondaryButtonStyle}" HorizontalAlignment="Center" Margin="0,40,0,0" />
-                </StackPanel>
+                <!-- ===================== BROWSE (landscape) =====================
+                     Same structure as portrait (header + search + chips + grid) laid
+                     out wide, grid 4 columns. Shares CardButtonStyle + ChipButtonTemplate
+                     so restyle + press/colour animations carry over. -->
+                <Grid Visibility="{Binding IsBrowseVisible, Converter={StaticResource BoolToVis}}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Header -->
+                    <Grid Grid.Row="0" Margin="64,40,64,26">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Image Source="{Binding LogoImage}" Stretch="Uniform" Height="80" Margin="0,0,22,0"
+                                   Visibility="{Binding HasLogo, Converter={StaticResource BoolToVis}}" />
+                            <TextBlock Text="{Binding DisplayName}" Foreground="White" FontWeight="Bold"
+                                       FontSize="46" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,22,0">
+                            <TextBlock HorizontalAlignment="Right">
+                                <Run Text="{Binding BookCount, Mode=OneWay}" FontFamily="{StaticResource MonoFontFamily}"
+                                     FontWeight="Bold" FontSize="34" Foreground="White" />
+                                <Run Text=" เล่ม" FontSize="28" Foreground="#CCFFFFFF" />
+                            </TextBlock>
+                            <TextBlock HorizontalAlignment="Right" FontSize="24" Foreground="#B3FFFFFF" Margin="0,4,0,0">
+                                <Run Text="อัปเดต " /><Run Text="{Binding LastUpdated, Mode=OneWay}" />
+                            </TextBlock>
+                        </StackPanel>
+                        <Button Grid.Column="2" Style="{StaticResource GearButtonStyle}"
+                                AutomationProperties.Name="ตั้งค่า" VerticalAlignment="Center"
+                                Command="{Binding OpenSettingsCommand}" />
+                    </Grid>
+
+                    <!-- Body panel -->
+                    <Border Grid.Row="1" Background="{StaticResource PanelBrush}" CornerRadius="44,44,0,0">
+                        <Grid Margin="64,40,64,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <!-- Search (full width) -->
+                            <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}"
+                                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="2"
+                                    CornerRadius="26" Height="108" Padding="28,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid Grid.Column="0" Width="44" Height="44" Margin="0,0,18,0" VerticalAlignment="Center">
+                                        <Ellipse Width="30" Height="30" Stroke="{StaticResource MutedBrush}" StrokeThickness="3"
+                                                 HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1" />
+                                        <Line X1="27" Y1="27" X2="42" Y2="42" Stroke="{StaticResource MutedBrush}"
+                                              StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                    </Grid>
+                                    <Grid Grid.Column="1">
+                                        <TextBlock Text="ค้นหาชื่อหนังสือ เลขทะเบียน หมวดหมู่ หรือสำนักพิมพ์"
+                                                   FontSize="34" Foreground="{StaticResource MutedBrush}"
+                                                   VerticalAlignment="Center" IsHitTestVisible="False"
+                                                   Visibility="{Binding HasQuery, Converter={StaticResource InvBoolToVis}}" />
+                                        <TextBox x:Name="SearchBoxL" Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
+                                                 FontSize="34" Foreground="{StaticResource TextBrush}"
+                                                 FontFamily="{StaticResource AppFontFamily}" ContextMenu="{x:Null}"
+                                                 Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center"
+                                                 CaretBrush="{StaticResource PrimaryBrush}" />
+                                    </Grid>
+                                    <Button Grid.Column="2" Command="{Binding ClearQueryCommand}" Width="56" Height="56"
+                                            Cursor="Hand" VerticalAlignment="Center"
+                                            Visibility="{Binding HasQuery, Converter={StaticResource BoolToVis}}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="#F1F5FA" CornerRadius="28">
+                                                    <Grid Width="28" Height="28">
+                                                        <Line X1="6" Y1="6" X2="22" Y2="22" Stroke="{StaticResource TextSecondBrush}" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                                        <Line X1="22" Y1="6" X2="6" Y2="22" Stroke="{StaticResource TextSecondBrush}" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                                    </Grid>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <!-- Category chips (shared template) -->
+                            <ItemsControl Grid.Row="1" Margin="0,24,0,0" ItemsSource="{Binding Categories}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Margin="0,0,16,16" Cursor="Hand"
+                                                Template="{StaticResource ChipButtonTemplate}"
+                                                Command="{Binding DataContext.SelectCategoryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding Name}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Result count -->
+                            <TextBlock Grid.Row="2" Margin="2,4,0,16">
+                                <Run Text="พบ " FontSize="30" Foreground="{StaticResource TextSecondBrush}" />
+                                <Run Text="{Binding FilteredCount, Mode=OneWay}" FontFamily="{StaticResource MonoFontFamily}"
+                                     FontWeight="Bold" FontSize="30" Foreground="{StaticResource TextBrush}" />
+                                <Run Text=" เล่ม" FontSize="30" Foreground="{StaticResource TextSecondBrush}" />
+                            </TextBlock>
+
+                            <!-- Grid: 4 columns (shared CardButtonStyle), virtualized rows -->
+                            <ItemsControl x:Name="CardsHostL" Grid.Row="3"
+                                          ItemsSource="{Binding BookRows}" Margin="-12,0,-12,24"
+                                          Visibility="{Binding IsEmpty, Converter={StaticResource InvBoolToVis}}"
+                                          VirtualizingPanel.IsVirtualizing="True"
+                                          VirtualizingPanel.VirtualizationMode="Recycling"
+                                          VirtualizingPanel.ScrollUnit="Pixel"
+                                          ScrollViewer.CanContentScroll="True"
+                                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                <ItemsControl.Template>
+                                    <ControlTemplate TargetType="ItemsControl">
+                                        <ScrollViewer CanContentScroll="True" Focusable="False"
+                                                      VerticalScrollBarVisibility="Auto"
+                                                      HorizontalScrollBarVisibility="Disabled">
+                                            <ItemsPresenter />
+                                        </ScrollViewer>
+                                    </ControlTemplate>
+                                </ItemsControl.Template>
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><VirtualizingStackPanel Orientation="Vertical" /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <ItemsControl ItemsSource="{Binding Cards}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><UniformGrid Columns="4" /></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button Style="{StaticResource CardButtonStyle}"
+                                                            Command="{Binding DataContext.SelectBookCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- L2-temp: round-trip back to portrait (small corner button; replaced by the
+                     landscape settings overlay in L4) -->
+                <Button Command="{Binding Settings.SetPortraitPresetCommand}" Cursor="Hand"
+                        HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="20">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="#99000000" CornerRadius="12" Padding="18,10">
+                                <TextBlock Text="← แนวตั้ง (ชั่วคราว)" Foreground="White" FontSize="22" />
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
             </Grid>
         </Grid>
     </Viewbox>

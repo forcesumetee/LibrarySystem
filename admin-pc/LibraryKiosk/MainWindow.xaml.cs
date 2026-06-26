@@ -130,7 +130,9 @@ public partial class MainWindow : Window
 
     private void OnScrollResetRequested(object? sender, EventArgs e)
     {
-        var sv = FindVisualChild<ScrollViewer>(CardsHost);
+        // Scroll whichever grid is currently shown (portrait vs landscape root-swap).
+        DependencyObject host = _vm.IsLandscape ? CardsHostL : CardsHost;
+        var sv = FindVisualChild<ScrollViewer>(host);
         sv?.ScrollToTop();
     }
 
