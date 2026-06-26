@@ -31,58 +31,56 @@
                                 CornerRadius="20" SnapsToDevicePixels="True">
                             <Grid>
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="360" />
+                                    <RowDefinition Height="320" />
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
 
-                                <!-- Cover -->
+                                <!-- Header: cover image (with cover) OR category colour + book
+                                     glyph (no cover). Title/publisher moved to the white body so
+                                     the card reads as a clean book card, not a solid colour block. -->
                                 <Border Grid.Row="0" CornerRadius="20,20,0,0" ClipToBounds="True"
                                         Background="{Binding PlaceholderBrush}">
                                     <Grid>
-                                        <!-- Grid uses Uniform over the deterministic colour chip (NOT a
-                                             per-card BlurEffect): the whole cover shows with no crop, the
-                                             chip fills any margin, and a 500-card virtualized scroll stays
-                                             smooth. The heavier blurred-background treatment is reserved for
-                                             the one-at-a-time detail modal. -->
+                                        <!-- no cover: faded book glyph centred on the category colour -->
+                                        <Viewbox Width="96" Height="96" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                 Visibility="{Binding HasCover, Converter={StaticResource InvBoolToVis}}">
+                                            <Path Fill="#80FFFFFF"
+                                                  Data="M3,5 C3,4.5 5,4 8,4 C10,4 11.5,4.5 12,5 L12,18 C11.5,17.5 10,17 8,17 C5,17 3,17.5 3,18 Z M21,5 C21,4.5 19,4 16,4 C14,4 12.5,4.5 12,5 L12,18 C12.5,17.5 14,17 16,17 C19,17 21,17.5 21,18 Z" />
+                                        </Viewbox>
+                                        <!-- cover present: whole cover, no crop (chip fills any margin) -->
                                         <Image Source="{Binding Cover}" Stretch="Uniform"
                                                Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
-                                        <!-- bottom scrim for title legibility -->
-                                        <Border VerticalAlignment="Bottom" Height="170">
-                                            <Border.Background>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                                    <GradientStop Color="#00000000" Offset="0" />
-                                                    <GradientStop Color="#CC000000" Offset="1" />
-                                                </LinearGradientBrush>
-                                            </Border.Background>
-                                        </Border>
-                                        <StackPanel VerticalAlignment="Bottom" Margin="20,0,20,16">
-                                            <TextBlock Text="{Binding Title}" Foreground="White"
-                                                       FontWeight="Bold" FontSize="30" TextWrapping="Wrap"
-                                                       MaxHeight="118" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Text="{Binding Publisher}" Foreground="#D8FFFFFF"
-                                                       FontWeight="Regular" FontSize="22" Margin="0,4,0,0"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       Visibility="{Binding HasPublisher, Converter={StaticResource BoolToVis}}" />
-                                        </StackPanel>
                                     </Grid>
                                 </Border>
 
-                                <!-- Meta -->
-                                <StackPanel Grid.Row="1" Margin="18,14,18,16">
+                                <!-- White body: title, publisher, reg-no, category badge + shelf -->
+                                <StackPanel Grid.Row="1" Margin="20,16,20,18">
+                                    <TextBlock Text="{Binding Title}" Foreground="{StaticResource TextBrush}"
+                                               FontWeight="Bold" FontSize="28" TextWrapping="Wrap"
+                                               MaxHeight="76" TextTrimming="CharacterEllipsis" LineHeight="34" />
+                                    <TextBlock Text="{Binding Publisher}" Foreground="{StaticResource TextSecondBrush}"
+                                               FontSize="22" Margin="0,6,0,0" TextTrimming="CharacterEllipsis"
+                                               Visibility="{Binding HasPublisher, Converter={StaticResource BoolToVis}}" />
                                     <TextBlock Text="{Binding RegNo}" FontFamily="{StaticResource MonoFontFamily}"
-                                               FontSize="24" Foreground="{StaticResource MutedBrush}" />
-                                    <Grid Margin="0,12,0,0">
-                                        <Border HorizontalAlignment="Left" CornerRadius="999"
-                                                Background="{StaticResource PrimaryTintBrush}" Padding="14,7">
-                                            <TextBlock Text="{Binding Category}" FontWeight="SemiBold" FontSize="22"
-                                                       Foreground="{StaticResource PrimaryBrush}"
-                                                       TextTrimming="CharacterEllipsis" MaxWidth="180" />
-                                        </Border>
-                                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center"
-                                                   FontFamily="{StaticResource MonoFontFamily}" FontSize="24"
-                                                   Foreground="{StaticResource TextSecondBrush}"
-                                                   Text="{Binding Shelf}"
-                                                   Visibility="{Binding HasShelf, Converter={StaticResource BoolToVis}}" />
+                                               FontSize="22" Foreground="{StaticResource MutedBrush}" Margin="0,12,0,0" />
+                                    <Grid Margin="0,14,0,0">
+                                        <!-- category badge: tinted pill in the category colour -->
+                                        <Grid HorizontalAlignment="Left" MaxWidth="190">
+                                            <Border CornerRadius="999" Background="{Binding PlaceholderBrush}" Opacity="0.16" />
+                                            <TextBlock Text="{Binding Category}" Foreground="{Binding PlaceholderBrush}"
+                                                       FontWeight="SemiBold" FontSize="21" Margin="16,7"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </Grid>
+                                        <!-- shelf: location pin + value -->
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                    Visibility="{Binding HasShelf, Converter={StaticResource BoolToVis}}">
+                                            <Viewbox Width="26" Height="26" Margin="0,0,5,0">
+                                                <Path Fill="{StaticResource MutedBrush}"
+                                                      Data="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" />
+                                            </Viewbox>
+                                            <TextBlock Text="{Binding Shelf}" FontFamily="{StaticResource MonoFontFamily}"
+                                                       FontSize="22" Foreground="{StaticResource TextSecondBrush}" VerticalAlignment="Center" />
+                                        </StackPanel>
                                     </Grid>
                                 </StackPanel>
                             </Grid>
