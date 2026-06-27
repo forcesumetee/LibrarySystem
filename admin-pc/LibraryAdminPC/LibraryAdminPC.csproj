@@ -7,6 +7,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <Version>1.0.0</Version>
+    <!-- User-facing product name (exe properties/installer). AssemblyName stays LibraryAdminPC. -->
+    <Product>LibraHub Admin</Product>
+    <AssemblyTitle>LibraHub Admin</AssemblyTitle>
+    <Description>LibraHub Admin</Description>
   </PropertyGroup>
 
   <!-- Force XAML to compile (generate .g.cs) -->
