@@ -60,12 +60,16 @@ Source: "{#DistDir}\AdminPC\*"; DestDir: "{app}\AdminPC"; Flags: recursesubdirs 
 Source: "LibraHub.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "StartAll.bat";  DestDir: "{app}"; Flags: ignoreversion
 Source: "RestartLibraHubServer.bat"; DestDir: "{app}"; Flags: ignoreversion
+; Support helper: prints the server AdminKey (from Server\appsettings.json) for the install team.
+; Lives at {app} (top folder) so it's easy to find, not buried under Server\.
+Source: "ShowAdminKey.bat"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; The server runs as the "LibraHubServer" Windows Service (auto-start) - no server shortcut, no
 ; "start both" launcher (a second server copy would clash on TCP 45269). Only the Admin app.
 Name: "{group}\LibraHub Admin";  Filename: "{app}\AdminPC\LibraryAdminPC.exe"; WorkingDir: "{app}\AdminPC"; IconFilename: "{app}\LibraHub.ico"
 Name: "{group}\Restart LibraHub Server (support)"; Filename: "{app}\RestartLibraHubServer.bat"; WorkingDir: "{app}"; IconFilename: "{app}\LibraHub.ico"
+Name: "{group}\Show AdminKey (support)"; Filename: "{app}\ShowAdminKey.bat"; WorkingDir: "{app}"; IconFilename: "{app}\LibraHub.ico"
 Name: "{group}\Uninstall LibraHub"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\LibraHub Admin"; Filename: "{app}\AdminPC\LibraryAdminPC.exe"; WorkingDir: "{app}\AdminPC"; IconFilename: "{app}\LibraHub.ico"; Tasks: desktopicon
 
