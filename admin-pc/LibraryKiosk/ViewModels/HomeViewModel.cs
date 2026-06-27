@@ -123,6 +123,11 @@ public partial class HomeViewModel : ObservableObject
     /// <summary>Raised on idle reset so the window can scroll the grid back to the top.</summary>
     public event EventHandler? ScrollResetRequested;
 
+    /// <summary>Raised when the selected category changes (chip tap / reset) so the window can
+    /// fade the grid in. Deliberately NOT raised on search-text changes (rapid keystrokes would
+    /// flicker), so it stays tied to single category events only.</summary>
+    public event EventHandler? CategoryChanged;
+
     // ---- admin settings overlay (Phase 5) ----
     public SettingsViewModel Settings { get; }
 
@@ -475,6 +480,8 @@ public partial class HomeViewModel : ObservableObject
         _selectedCategory = cat;
         foreach (var chip in Categories) chip.IsSelected = chip.Name == cat;
         ApplyFilter();
+        // Single, non-rapid event → safe to fade the grid (unlike per-keystroke OnQueryChanged).
+        CategoryChanged?.Invoke(this, EventArgs.Empty);
     }
 
     [RelayCommand]

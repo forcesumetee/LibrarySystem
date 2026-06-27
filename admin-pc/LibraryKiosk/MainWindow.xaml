@@ -569,12 +569,12 @@
                         <!-- Empty state -->
                         <StackPanel Grid.Row="3" VerticalAlignment="Center" HorizontalAlignment="Center"
                                     Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}">
-                            <Border Width="180" Height="180" CornerRadius="90" Background="#E7EDF5"
+                            <Border Width="180" Height="180" CornerRadius="90" Background="{DynamicResource PrimaryTintBrush}"
                                     HorizontalAlignment="Center">
                                 <Grid Width="80" Height="80">
-                                    <Ellipse Width="56" Height="56" Stroke="#9DB0C8" StrokeThickness="5"
+                                    <Ellipse Width="56" Height="56" Stroke="{DynamicResource PrimaryBrush}" StrokeThickness="5"
                                              HorizontalAlignment="Left" VerticalAlignment="Top" Margin="2" />
-                                    <Line X1="52" Y1="52" X2="76" Y2="76" Stroke="#9DB0C8" StrokeThickness="5"
+                                    <Line X1="52" Y1="52" X2="76" Y2="76" Stroke="{DynamicResource PrimaryBrush}" StrokeThickness="5"
                                           StrokeStartLineCap="Round" />
                                 </Grid>
                             </Border>
@@ -715,9 +715,10 @@
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
-                        <!-- Cover -->
+                        <!-- Cover. No-cover fill follows the theme (PrimaryBrush) so the modal head
+                             matches the chosen colour; a real cover (blur-bg + full) covers it. -->
                         <Border Grid.Row="0" Height="720" CornerRadius="36,36,0,0" ClipToBounds="True"
-                                Background="{Binding PlaceholderBrush}">
+                                Background="{DynamicResource PrimaryBrush}">
                             <Grid>
                                 <!-- Netflix-style cover: blurred fill behind, full cover in front so
                                      any aspect ratio shows complete (no crop) and the frame stays full. -->
@@ -769,7 +770,7 @@
                             </Grid>
 
                             <Border Margin="0,28,0,0" Background="{StaticResource PrimaryTintBrush}"
-                                    BorderBrush="#D7E2F0" BorderThickness="1" CornerRadius="22" Padding="28,22"
+                                    BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" CornerRadius="22" Padding="28,22"
                                     Visibility="{Binding HasShelf, Converter={StaticResource BoolToVis}}">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Border Width="72" Height="72" CornerRadius="18" Background="{StaticResource PrimaryBrush}" Margin="0,0,22,0">
@@ -780,7 +781,7 @@
                                         </StackPanel>
                                     </Border>
                                     <StackPanel VerticalAlignment="Center">
-                                        <TextBlock Text="ตำแหน่งหนังสือ · ชั้นวาง" FontSize="26" Foreground="#5577A8" />
+                                        <TextBlock Text="ตำแหน่งหนังสือ · ชั้นวาง" FontSize="26" Foreground="{StaticResource TextSecondBrush}" />
                                         <TextBlock Text="{Binding Shelf}" FontWeight="Bold" FontSize="40"
                                                    Foreground="{StaticResource PrimaryBrush}" Margin="0,2,0,0" />
 
@@ -1119,11 +1120,11 @@
                             <!-- Empty state -->
                             <StackPanel Grid.Row="3" VerticalAlignment="Center" HorizontalAlignment="Center"
                                         Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}">
-                                <Border Width="180" Height="180" CornerRadius="90" Background="#E7EDF5" HorizontalAlignment="Center">
+                                <Border Width="180" Height="180" CornerRadius="90" Background="{DynamicResource PrimaryTintBrush}" HorizontalAlignment="Center">
                                     <Grid Width="80" Height="80">
-                                        <Ellipse Width="56" Height="56" Stroke="#9DB0C8" StrokeThickness="5"
+                                        <Ellipse Width="56" Height="56" Stroke="{DynamicResource PrimaryBrush}" StrokeThickness="5"
                                                  HorizontalAlignment="Left" VerticalAlignment="Top" Margin="2" />
-                                        <Line X1="52" Y1="52" X2="76" Y2="76" Stroke="#9DB0C8" StrokeThickness="5" StrokeStartLineCap="Round" />
+                                        <Line X1="52" Y1="52" X2="76" Y2="76" Stroke="{DynamicResource PrimaryBrush}" StrokeThickness="5" StrokeStartLineCap="Round" />
                                     </Grid>
                                 </Border>
                                 <TextBlock Text="ไม่พบหนังสือที่ค้นหา" FontWeight="Bold" FontSize="44"
@@ -1206,8 +1207,9 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
 
-                            <!-- LEFT pane: cover/colour (blur-bg full, no crop) -->
-                            <Border Grid.Column="0" Background="{Binding PlaceholderBrush}" ClipToBounds="True">
+                            <!-- LEFT pane: cover/colour (blur-bg full, no crop). No-cover fill follows
+                                 the theme (PrimaryBrush); a real cover covers it. -->
+                            <Border Grid.Column="0" Background="{DynamicResource PrimaryBrush}" ClipToBounds="True">
                                 <Grid>
                                     <Image Source="{Binding Cover}" Stretch="UniformToFill" Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}">
                                         <Image.Effect><BlurEffect Radius="60" KernelType="Gaussian" RenderingBias="Performance" /></Image.Effect>
@@ -1288,7 +1290,7 @@
                                             </StackPanel>
                                         </Border>
                                     </Grid>
-                                    <Border Margin="0,20,0,0" Background="{StaticResource PrimaryTintBrush}" BorderBrush="#D7E2F0" BorderThickness="1" CornerRadius="22" Padding="28,22"
+                                    <Border Margin="0,20,0,0" Background="{StaticResource PrimaryTintBrush}" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" CornerRadius="22" Padding="28,22"
                                             Visibility="{Binding HasShelf, Converter={StaticResource BoolToVis}}">
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                             <Border Width="72" Height="72" CornerRadius="18" Background="{StaticResource PrimaryBrush}" Margin="0,0,22,0">
@@ -1297,7 +1299,7 @@
                                                 </Viewbox>
                                             </Border>
                                             <StackPanel VerticalAlignment="Center">
-                                                <TextBlock Text="ตำแหน่งหนังสือ · ชั้นวาง" FontSize="24" Foreground="#5577A8" />
+                                                <TextBlock Text="ตำแหน่งหนังสือ · ชั้นวาง" FontSize="24" Foreground="{StaticResource TextSecondBrush}" />
                                                 <TextBlock Text="{Binding Shelf}" FontWeight="Bold" FontSize="38" Foreground="{StaticResource PrimaryBrush}" Margin="0,2,0,0" />
                                             </StackPanel>
                                         </StackPanel>

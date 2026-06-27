@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using LibraryKiosk.Services;
 using LibraryKiosk.ViewModels;
@@ -29,6 +30,7 @@ public partial class MainWindow : Window
         _vm.DisplayModeChangeRequested += ApplyDisplayMode;
         _vm.ExitRequested += OnExitRequested;
         _vm.ScrollResetRequested += OnScrollResetRequested;
+        _vm.CategoryChanged += OnCategoryChanged;
 
         // Idle reset: any user input restarts the timer; firing returns the kiosk to a
         // clean browse state for the next person. Active in fullscreen (kiosk) only.
@@ -139,6 +141,20 @@ public partial class MainWindow : Window
         DependencyObject host = _vm.IsLandscape ? CardsHostL : CardsHost;
         var sv = FindVisualChild<ScrollViewer>(host);
         sv?.ScrollToTop();
+    }
+
+    /// <summary>Soft fade-in of the grid when the category changes (chip / reset). Bound only to
+    /// the category-change event — NOT to typing/search — so rapid keystrokes never flicker.
+    /// Animates the host container's Opacity (one animation, not per-card) so the virtualized
+    /// 500-book grid stays smooth.</summary>
+    private void OnCategoryChanged(object? sender, EventArgs e)
+    {
+        var host = _vm.IsLandscape ? (ItemsControl)CardsHostL : CardsHost;
+        var fade = new DoubleAnimation(0.0, 1.0, new Duration(TimeSpan.FromMilliseconds(180)))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        host.BeginAnimation(UIElement.OpacityProperty, fade);
     }
 
     // ---------------- exit / lockdown ----------------
