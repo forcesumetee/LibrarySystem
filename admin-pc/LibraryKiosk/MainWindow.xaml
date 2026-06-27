@@ -155,7 +155,7 @@
             <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="FontSize" Value="40" />
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -168,6 +168,21 @@
                                 <Setter TargetName="B" Property="Background" Value="{StaticResource PrimaryDarkBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- Theme-colour preset swatch (settings) — colour set per-button via Background. -->
+        <Style x:Key="ThemeSwatchButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="92" />
+            <Setter Property="Height" Value="64" />
+            <Setter Property="Margin" Value="0,0,16,16" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="14"
+                                BorderBrush="#22000000" BorderThickness="1" />
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -324,43 +339,21 @@
         </Style>
 
         <!-- Category chip button visual (shared by the portrait + landscape browse).
-             Own SolidColorBrush instances so fill/border/text animate on (de)select. -->
+             Theme-reactive via DynamicResource (instant swap, no colour fade) so changing the
+             primary colour at runtime recolours selected/unselected chips immediately. -->
         <ControlTemplate x:Key="ChipButtonTemplate" TargetType="Button">
             <Border x:Name="Chip" CornerRadius="16" BorderThickness="2"
-                    Padding="30,16" MinHeight="64">
-                <Border.Background>
-                    <SolidColorBrush Color="Transparent" />
-                </Border.Background>
-                <Border.BorderBrush>
-                    <SolidColorBrush Color="{StaticResource BorderColor}" />
-                </Border.BorderBrush>
+                    Padding="30,16" MinHeight="64"
+                    Background="Transparent" BorderBrush="{DynamicResource BorderBrush}">
                 <TextBlock x:Name="ChipText" Text="{Binding Name}" FontWeight="SemiBold"
-                           FontSize="32" VerticalAlignment="Center">
-                    <TextBlock.Foreground>
-                        <SolidColorBrush Color="{StaticResource PrimaryColor}" />
-                    </TextBlock.Foreground>
-                </TextBlock>
+                           FontSize="32" VerticalAlignment="Center"
+                           Foreground="{DynamicResource PrimaryBrush}" />
             </Border>
             <ControlTemplate.Triggers>
                 <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                    <DataTrigger.EnterActions>
-                        <BeginStoryboard>
-                            <Storyboard>
-                                <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
-                                <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
-                                <ColorAnimation Storyboard.TargetName="ChipText" Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)" To="White" Duration="0:0:0.18" />
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </DataTrigger.EnterActions>
-                    <DataTrigger.ExitActions>
-                        <BeginStoryboard>
-                            <Storyboard>
-                                <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="Transparent" Duration="0:0:0.18" />
-                                <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="{StaticResource BorderColor}" Duration="0:0:0.18" />
-                                <ColorAnimation Storyboard.TargetName="ChipText" Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)" To="{StaticResource PrimaryColor}" Duration="0:0:0.18" />
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </DataTrigger.ExitActions>
+                    <Setter TargetName="Chip" Property="Background" Value="{DynamicResource PrimaryBrush}" />
+                    <Setter TargetName="Chip" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+                    <Setter TargetName="ChipText" Property="Foreground" Value="{DynamicResource OnPrimaryBrush}" />
                 </DataTrigger>
             </ControlTemplate.Triggers>
         </ControlTemplate>
@@ -396,7 +389,7 @@
             <Grid x:Name="PortraitRoot" Visibility="{Binding IsLandscape, Converter={StaticResource InvBoolToVis}}">
 
             <!-- Background: branding image over gradient fallback -->
-            <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
+            <Rectangle Fill="{DynamicResource BackgroundGradientBrush}" />
             <Image Source="{Binding BackgroundImage}" Stretch="UniformToFill"
                    Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}" />
             <Border Background="#33000000"
@@ -598,7 +591,7 @@
 
             <!-- ===================== INITIAL LOADING (skeleton) ===================== -->
             <Grid Visibility="{Binding IsInitialLoading, Converter={StaticResource BoolToVis}}">
-                <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
+                <Rectangle Fill="{DynamicResource BackgroundGradientBrush}" />
 
                 <!-- header placeholder -->
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Margin="48,46,0,0">
@@ -863,7 +856,7 @@
                 </Grid.Style>
 
                 <!-- branding background (same layering as the browse view) -->
-                <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
+                <Rectangle Fill="{DynamicResource BackgroundGradientBrush}" />
                 <Image Source="{Binding BackgroundImage}" Stretch="UniformToFill"
                        Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}" />
                 <Border Background="#73091226" />
@@ -959,7 +952,7 @@
                  landscape layouts. Shares all styles/templates with portrait.
                  ============================================================ -->
             <Grid x:Name="LandscapeRoot" Visibility="{Binding IsLandscape, Converter={StaticResource BoolToVis}}">
-                <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
+                <Rectangle Fill="{DynamicResource BackgroundGradientBrush}" />
                 <Image Source="{Binding BackgroundImage}" Stretch="UniformToFill"
                        Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}" />
                 <Border Background="#33000000"
@@ -1325,7 +1318,7 @@
                       Visibility="{Binding IsWelcomeVisible, Converter={StaticResource BoolToVis}}"
                       Background="#01000000" MouseDown="Welcome_Dismiss" TouchDown="Welcome_Dismiss">
 
-                    <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
+                    <Rectangle Fill="{DynamicResource BackgroundGradientBrush}" />
                     <Image Source="{Binding BackgroundImage}" Stretch="UniformToFill"
                            Visibility="{Binding HasBackground, Converter={StaticResource BoolToVis}}" />
                     <Border Background="#73091226" />
@@ -1433,7 +1426,7 @@
 
                 <!-- ===================== INITIAL LOADING (landscape skeleton) ===================== -->
                 <Grid Visibility="{Binding IsInitialLoading, Converter={StaticResource BoolToVis}}">
-                    <Rectangle Fill="{StaticResource BackgroundGradientBrush}" />
+                    <Rectangle Fill="{DynamicResource BackgroundGradientBrush}" />
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Margin="64,46,0,0">
                         <Border Width="80" Height="80" CornerRadius="20" Background="#33FFFFFF" />
                         <Border Width="360" Height="44" CornerRadius="12" Background="#33FFFFFF" VerticalAlignment="Center" Margin="22,0,0,0" />
@@ -1877,6 +1870,91 @@
                                         <TextBlock Text="{Binding ResolutionStatus}" FontSize="26"
                                                    Foreground="{StaticResource TextSecondBrush}" Margin="0,12,0,0"
                                                    TextWrapping="Wrap" Visibility="{Binding ResolutionStatus, Converter={StaticResource StrToVis}}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- ธีมสี (สีหลัก) -->
+                                <Border Background="{StaticResource SurfaceBrush}" CornerRadius="28" Padding="36,32" Margin="0,0,0,28">
+                                    <StackPanel>
+                                        <TextBlock Text="ธีมสี (สีหลัก)" FontWeight="Bold" FontSize="36"
+                                                   Foreground="{StaticResource PrimaryBrush}" />
+                                        <TextBlock Text="เปลี่ยนสีหลักของจอ — ปุ่ม/แท็บหมวด/ส่วนหัว/พื้นหลัง เปลี่ยนตามทันที (ตัวอักษรปรับให้อ่านออกอัตโนมัติ)"
+                                                   FontSize="26" Foreground="{StaticResource TextSecondBrush}" TextWrapping="Wrap" Margin="0,8,0,18" />
+
+                                        <!-- preset swatches -->
+                                        <WrapPanel>
+                                            <Button Style="{StaticResource ThemeSwatchButtonStyle}" Background="#1F5AA8" Command="{Binding SelectThemeSwatchCommand}" CommandParameter="#1F5AA8" />
+                                            <Button Style="{StaticResource ThemeSwatchButtonStyle}" Background="#2E8B86" Command="{Binding SelectThemeSwatchCommand}" CommandParameter="#2E8B86" />
+                                            <Button Style="{StaticResource ThemeSwatchButtonStyle}" Background="#2E9C7E" Command="{Binding SelectThemeSwatchCommand}" CommandParameter="#2E9C7E" />
+                                            <Button Style="{StaticResource ThemeSwatchButtonStyle}" Background="#5A5BB8" Command="{Binding SelectThemeSwatchCommand}" CommandParameter="#5A5BB8" />
+                                            <Button Style="{StaticResource ThemeSwatchButtonStyle}" Background="#C2622A" Command="{Binding SelectThemeSwatchCommand}" CommandParameter="#C2622A" />
+                                            <Button Style="{StaticResource ThemeSwatchButtonStyle}" Background="#C0413B" Command="{Binding SelectThemeSwatchCommand}" CommandParameter="#C0413B" />
+                                        </WrapPanel>
+
+                                        <!-- hex + live preview -->
+                                        <Grid Margin="0,8,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="รหัสสี (HEX)" FontSize="26" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,8" />
+                                                <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}"
+                                                        BorderThickness="2" CornerRadius="18" Padding="22,0" Height="88" HorizontalAlignment="Left" Width="320">
+                                                    <TextBox Text="{Binding PrimaryColorInput, UpdateSourceTrigger=PropertyChanged}"
+                                                             FontFamily="{StaticResource MonoFontFamily}" FontSize="32" Foreground="{StaticResource TextBrush}"
+                                                             Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center"
+                                                             ContextMenu="{x:Null}" CaretBrush="{StaticResource PrimaryBrush}" />
+                                                </Border>
+                                            </StackPanel>
+                                            <!-- live preview: fill = PrimaryBrush, text = OnPrimaryBrush -->
+                                            <Border Grid.Column="1" Width="200" Height="116" CornerRadius="18" VerticalAlignment="Bottom"
+                                                    Background="{DynamicResource PrimaryBrush}">
+                                                <TextBlock Text="ตัวอย่าง" FontSize="30" FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource OnPrimaryBrush}"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                        </Grid>
+
+                                        <!-- RGB sliders -->
+                                        <Grid Margin="0,20,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="40" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="64" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="R" FontSize="28" FontWeight="SemiBold" Foreground="#C0413B" VerticalAlignment="Center" />
+                                            <Slider Grid.Column="1" Minimum="0" Maximum="255" Value="{Binding ColorR}" VerticalAlignment="Center" Height="44" />
+                                            <TextBlock Grid.Column="2" Text="{Binding ColorR, StringFormat={}{0:0}}" FontFamily="{StaticResource MonoFontFamily}" FontSize="26" Foreground="{StaticResource TextBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <Grid Margin="0,10,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="40" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="64" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="G" FontSize="28" FontWeight="SemiBold" Foreground="#2E9C7E" VerticalAlignment="Center" />
+                                            <Slider Grid.Column="1" Minimum="0" Maximum="255" Value="{Binding ColorG}" VerticalAlignment="Center" Height="44" />
+                                            <TextBlock Grid.Column="2" Text="{Binding ColorG, StringFormat={}{0:0}}" FontFamily="{StaticResource MonoFontFamily}" FontSize="26" Foreground="{StaticResource TextBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <Grid Margin="0,10,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="40" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="64" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="B" FontSize="28" FontWeight="SemiBold" Foreground="#1F5AA8" VerticalAlignment="Center" />
+                                            <Slider Grid.Column="1" Minimum="0" Maximum="255" Value="{Binding ColorB}" VerticalAlignment="Center" Height="44" />
+                                            <TextBlock Grid.Column="2" Text="{Binding ColorB, StringFormat={}{0:0}}" FontFamily="{StaticResource MonoFontFamily}" FontSize="26" Foreground="{StaticResource TextBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        </Grid>
+
+                                        <Grid Margin="0,18,0,0">
+                                            <TextBlock Text="{Binding ThemeColorStatus}" FontSize="26" Foreground="{StaticResource ErrorBrush}"
+                                                       VerticalAlignment="Center" TextWrapping="Wrap"
+                                                       Visibility="{Binding ThemeColorStatus, Converter={StaticResource StrToVis}}" />
+                                            <Button HorizontalAlignment="Right" Content="คืนค่าเริ่มต้น" FontSize="28"
+                                                    Style="{StaticResource SecondaryButtonStyle}" Command="{Binding ResetThemeColorCommand}" />
+                                        </Grid>
                                     </StackPanel>
                                 </Border>
 
