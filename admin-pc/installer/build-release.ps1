@@ -1,8 +1,8 @@
 <#
-  LibraHub — build/publish + staging script (INST-1)
+  LibraHub - build/publish + staging script (INST-1)
   Publishes the 3 .NET projects SELF-CONTAINED (win-x64, no .NET runtime needed on target),
   lays them out under .\dist\{Server,AdminPC,Kiosk}, stages the server appsettings.json
-  (deployment template — AdminKey filled by the installer; License:Salt injected here), and
+  (deployment template - AdminKey filled by the installer; License:Salt injected here), and
   converts the LibraHub logo PNG -> multi-size LibraHub.ico for the apps/installer/shortcuts.
 
   Run with Windows PowerShell 5.1 (needs System.Drawing for the .ico step):
@@ -57,7 +57,7 @@ if ([string]::IsNullOrWhiteSpace($LicenseSalt) -and (Test-Path $saltFile)) {
 $saltOk = -not [string]::IsNullOrWhiteSpace($LicenseSalt)
 if (-not $saltOk) {
   $LicenseSalt = "CHANGE-ME-MUST-MATCH-KEYGEN"
-  Write-Warning "No License SALT provided (-LicenseSalt / `$env:LIBRAHUB_LICENSE_SALT / license.secret). Staged appsettings.json keeps a placeholder — activation will fail until you set the real salt."
+  Write-Warning "No License SALT provided (-LicenseSalt / `$env:LIBRAHUB_LICENSE_SALT / license.secret). Staged appsettings.json keeps a placeholder - activation will fail until you set the real salt."
 }
 
 # ---- stage server appsettings.json (deployment template; AdminKey set by installer) ----
@@ -162,7 +162,7 @@ foreach ($e in $exes) {
     Write-Host ("  OK  {0,-22} folder={1} MB  self-contained={2}" -f (Split-Path -Leaf $e), $sz, $sc)
   } else { Write-Host "  MISSING $e" -ForegroundColor Red; $allOk = $false }
 }
-Write-Host ("License:Salt staged: " + $saltOk + $(if (-not $saltOk) { " (PLACEHOLDER — set the real salt before shipping)" } else { "" }))
+Write-Host ("License:Salt staged: " + $saltOk + $(if (-not $saltOk) { " (PLACEHOLDER - set the real salt before shipping)" } else { "" }))
 Write-Host ("ico created: " + (Test-Path $ico))
 if (-not $allOk) { throw "one or more exes missing" }
 Write-Host "`nBUILD OK" -ForegroundColor Green
