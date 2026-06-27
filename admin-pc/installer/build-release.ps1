@@ -2,16 +2,19 @@
   LibraHub — build/publish + staging script (INST-1)
   Publishes the 3 .NET projects SELF-CONTAINED (win-x64, no .NET runtime needed on target),
   lays them out under .\dist\{Server,AdminPC,Kiosk}, stages the server appsettings.json
-  (deployment template — AdminKey filled by the installer) + the license CSV, and converts
-  the LibraHub logo PNG -> multi-size LibraHub.ico for the apps/installer/shortcuts.
+  (deployment template — AdminKey filled by the installer; License:Salt injected here), and
+  converts the LibraHub logo PNG -> multi-size LibraHub.ico for the apps/installer/shortcuts.
 
   Run with Windows PowerShell 5.1 (needs System.Drawing for the .ico step):
       powershell.exe -ExecutionPolicy Bypass -File build-release.ps1
-  Optional params override the logo / license-csv locations.
+
+  License SALT (shared secret, MUST match the keygen tool) is resolved in this order:
+      -LicenseSalt <value>  ->  $env:LIBRAHUB_LICENSE_SALT  ->  .\license.secret (gitignored)
+  If none is found the staged appsettings.json keeps a CHANGE-ME placeholder and a warning is shown.
 #>
 param(
   [string]$LogoPng    = "$env:USERPROFILE\Downloads\LibraHub_logo.png",
-  [string]$LicenseCsv = "C:\Projects\LibrarySystem\release\2026-02-27_v1.1.0\license_keys_10000.csv",
+  [string]$LicenseSalt = "",
   [string]$Configuration = "Release",
   [string]$Rid = "win-x64"
 )
@@ -44,9 +47,22 @@ foreach ($p in $projects) {
   if ($LASTEXITCODE -ne 0) { throw "publish failed for $($p.Name) (exit $LASTEXITCODE)" }
 }
 
+# ---- resolve License SALT (shared secret; never committed to git) ----
+# Order: -LicenseSalt param  ->  env var  ->  .\license.secret (gitignored)  ->  placeholder.
+if ([string]::IsNullOrWhiteSpace($LicenseSalt)) { $LicenseSalt = $env:LIBRAHUB_LICENSE_SALT }
+$saltFile = Join-Path $PSScriptRoot "license.secret"
+if ([string]::IsNullOrWhiteSpace($LicenseSalt) -and (Test-Path $saltFile)) {
+  $LicenseSalt = (Get-Content $saltFile -Raw).Trim()
+}
+$saltOk = -not [string]::IsNullOrWhiteSpace($LicenseSalt)
+if (-not $saltOk) {
+  $LicenseSalt = "CHANGE-ME-MUST-MATCH-KEYGEN"
+  Write-Warning "No License SALT provided (-LicenseSalt / `$env:LIBRAHUB_LICENSE_SALT / license.secret). Staged appsettings.json keeps a placeholder — activation will fail until you set the real salt."
+}
+
 # ---- stage server appsettings.json (deployment template; AdminKey set by installer) ----
 # Web SDK copies the dev appsettings into the output, so overwrite it with a clean template.
-# KeysFile/IssuerUrl omitted -> server uses its built-in defaults (exeDir license CSV fallback).
+# Offline hash+salt licensing: no IssuerUrl / KeysFile / CSV (all retired). Salt injected below.
 $serverSettings = Join-Path $dist "Server\appsettings.json"
 @'
 {
@@ -57,7 +73,7 @@ $serverSettings = Join-Path $dist "Server\appsettings.json"
     "DbPath": "C:\\ProgramData\\LibrarySystem\\library.db"
   },
   "License": {
-    "RequireKeyList": true,
+    "Salt": "__LICENSE_SALT__",
     "BypassInDevelopment": false
   },
   "Logging": {
@@ -65,19 +81,11 @@ $serverSettings = Join-Path $dist "Server\appsettings.json"
   },
   "AllowedHosts": "*"
 }
-'@ | Set-Content -Path $serverSettings -Encoding UTF8
+'@.Replace('__LICENSE_SALT__', $LicenseSalt) | Set-Content -Path $serverSettings -Encoding UTF8
 # remove any dev-only Development overrides that publish may have carried in
 $devSettings = Join-Path $dist "Server\appsettings.Development.json"
 if (Test-Path $devSettings) { Remove-Item $devSettings -Force }
-Write-Host "staged Server\appsettings.json (AdminKey placeholder)" -ForegroundColor Green
-
-# ---- stage license CSV next to the server exe (Program.cs exeDir fallback) ----
-if (Test-Path $LicenseCsv) {
-  Copy-Item $LicenseCsv (Join-Path $dist "Server\license_keys_10000.csv") -Force
-  Write-Host "staged license_keys_10000.csv" -ForegroundColor Green
-} else {
-  Write-Warning "license CSV not found at: $LicenseCsv  (stage it into dist\Server before packaging)"
-}
+Write-Host ("staged Server\appsettings.json (AdminKey placeholder; License:Salt " + $(if ($saltOk) { "set" } else { "PLACEHOLDER" }) + ")") -ForegroundColor Green
 
 # ---- logo PNG -> multi-size .ico (16/32/48/256) ----
 function Convert-PngToIco {
@@ -154,7 +162,7 @@ foreach ($e in $exes) {
     Write-Host ("  OK  {0,-22} folder={1} MB  self-contained={2}" -f (Split-Path -Leaf $e), $sz, $sc)
   } else { Write-Host "  MISSING $e" -ForegroundColor Red; $allOk = $false }
 }
-Write-Host ("license CSV staged: " + (Test-Path (Join-Path $dist 'Server\license_keys_10000.csv')))
+Write-Host ("License:Salt staged: " + $saltOk + $(if (-not $saltOk) { " (PLACEHOLDER — set the real salt before shipping)" } else { "" }))
 Write-Host ("ico created: " + (Test-Path $ico))
 if (-not $allOk) { throw "one or more exes missing" }
 Write-Host "`nBUILD OK" -ForegroundColor Green
