@@ -110,7 +110,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="CardRoot" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                <Setter TargetName="CardRoot" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
                                 <Setter TargetName="CardRoot" Property="BorderThickness" Value="3" />
                                 <!-- finger-down: quick shrink so the touch reads as registered -->
                                 <Trigger.EnterActions>
@@ -159,13 +159,13 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="B" Background="{StaticResource PrimaryBrush}" CornerRadius="20"
+                        <Border x:Name="B" Background="{DynamicResource PrimaryBrush}" CornerRadius="20"
                                 Padding="56,22" MinHeight="88">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="B" Property="Background" Value="{StaticResource PrimaryDarkBrush}" />
+                                <Setter TargetName="B" Property="Background" Value="{DynamicResource PrimaryDarkBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -229,8 +229,8 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="K" Property="Background" Value="{StaticResource PrimaryTintBrush}" />
-                                <Setter TargetName="K" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                <Setter TargetName="K" Property="Background" Value="{DynamicResource PrimaryTintBrush}" />
+                                <Setter TargetName="K" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
                                 <Trigger.EnterActions>
                                     <BeginStoryboard>
                                         <Storyboard>
@@ -271,18 +271,18 @@
             <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="FontSize" Value="30" />
-            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="B" Background="{StaticResource SurfaceBrush}" CornerRadius="16"
-                                BorderBrush="{StaticResource PrimaryBrush}" BorderThickness="2"
+                                BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="2"
                                 Padding="28,16" MinHeight="72">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="B" Property="Background" Value="{StaticResource PrimaryTintBrush}" />
+                                <Setter TargetName="B" Property="Background" Value="{DynamicResource PrimaryTintBrush}" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="B" Property="Opacity" Value="0.4" />
@@ -476,7 +476,7 @@
                                              FontSize="36" Foreground="{StaticResource TextBrush}"
                                              FontFamily="{StaticResource AppFontFamily}" ContextMenu="{x:Null}"
                                              Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center"
-                                             CaretBrush="{StaticResource PrimaryBrush}" />
+                                             CaretBrush="{DynamicResource PrimaryBrush}" />
                                 </Grid>
 
                                 <Button Grid.Column="2" Command="{Binding ClearQueryCommand}" Width="56" Height="56"
@@ -769,11 +769,11 @@
                                 </StackPanel>
                             </Grid>
 
-                            <Border Margin="0,28,0,0" Background="{StaticResource PrimaryTintBrush}"
+                            <Border Margin="0,28,0,0" Background="{DynamicResource PrimaryTintBrush}"
                                     BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" CornerRadius="22" Padding="28,22"
                                     Visibility="{Binding HasShelf, Converter={StaticResource BoolToVis}}">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Border Width="72" Height="72" CornerRadius="18" Background="{StaticResource PrimaryBrush}" Margin="0,0,22,0">
+                                    <Border Width="72" Height="72" CornerRadius="18" Background="{DynamicResource PrimaryBrush}" Margin="0,0,22,0">
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                             <Border Width="9" Height="34" CornerRadius="2" Background="White" Margin="2,0" />
                                             <Border Width="9" Height="34" CornerRadius="2" Background="#CCFFFFFF" Margin="2,0" />
@@ -783,7 +783,7 @@
                                     <StackPanel VerticalAlignment="Center">
                                         <TextBlock Text="ตำแหน่งหนังสือ · ชั้นวาง" FontSize="26" Foreground="{StaticResource TextSecondBrush}" />
                                         <TextBlock Text="{Binding Shelf}" FontWeight="Bold" FontSize="40"
-                                                   Foreground="{StaticResource PrimaryBrush}" Margin="0,2,0,0" />
+                                                   Foreground="{DynamicResource PrimaryBrush}" Margin="0,2,0,0" />
 
                                     </StackPanel>
                                 </StackPanel>
@@ -1035,7 +1035,7 @@
                                                  FontSize="34" Foreground="{StaticResource TextBrush}"
                                                  FontFamily="{StaticResource AppFontFamily}" ContextMenu="{x:Null}"
                                                  Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center"
-                                                 CaretBrush="{StaticResource PrimaryBrush}" />
+                                                 CaretBrush="{DynamicResource PrimaryBrush}" />
                                     </Grid>
                                     <Button Grid.Column="2" Command="{Binding ClearQueryCommand}" Width="56" Height="56"
                                             Cursor="Hand" VerticalAlignment="Center"
@@ -1250,8 +1250,8 @@
                                     <StackPanel Grid.Column="0" Margin="0,0,16,0">
                                         <TextBlock Text="รายละเอียดหนังสือ" FontSize="24" Foreground="{StaticResource MutedBrush}" />
                                         <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="40" Foreground="{StaticResource TextBrush}" TextWrapping="Wrap" Margin="0,6,0,0" />
-                                        <Border HorizontalAlignment="Left" CornerRadius="16" Background="{StaticResource PrimaryTintBrush}" Padding="18,8" Margin="0,16,0,0">
-                                            <TextBlock Text="{Binding Category}" Foreground="{StaticResource PrimaryBrush}" FontWeight="SemiBold" FontSize="24" />
+                                        <Border HorizontalAlignment="Left" CornerRadius="16" Background="{DynamicResource PrimaryTintBrush}" Padding="18,8" Margin="0,16,0,0">
+                                            <TextBlock Text="{Binding Category}" Foreground="{DynamicResource PrimaryBrush}" FontWeight="SemiBold" FontSize="24" />
                                         </Border>
                                     </StackPanel>
                                     <Button Grid.Column="1" VerticalAlignment="Top" Width="64" Height="64" Cursor="Hand"
@@ -1290,17 +1290,17 @@
                                             </StackPanel>
                                         </Border>
                                     </Grid>
-                                    <Border Margin="0,20,0,0" Background="{StaticResource PrimaryTintBrush}" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" CornerRadius="22" Padding="28,22"
+                                    <Border Margin="0,20,0,0" Background="{DynamicResource PrimaryTintBrush}" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" CornerRadius="22" Padding="28,22"
                                             Visibility="{Binding HasShelf, Converter={StaticResource BoolToVis}}">
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Border Width="72" Height="72" CornerRadius="18" Background="{StaticResource PrimaryBrush}" Margin="0,0,22,0">
+                                            <Border Width="72" Height="72" CornerRadius="18" Background="{DynamicResource PrimaryBrush}" Margin="0,0,22,0">
                                                 <Viewbox Width="40" Height="40">
                                                     <Path Fill="White" Data="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" />
                                                 </Viewbox>
                                             </Border>
                                             <StackPanel VerticalAlignment="Center">
                                                 <TextBlock Text="ตำแหน่งหนังสือ · ชั้นวาง" FontSize="24" Foreground="{StaticResource TextSecondBrush}" />
-                                                <TextBlock Text="{Binding Shelf}" FontWeight="Bold" FontSize="38" Foreground="{StaticResource PrimaryBrush}" Margin="0,2,0,0" />
+                                                <TextBlock Text="{Binding Shelf}" FontWeight="Bold" FontSize="38" Foreground="{DynamicResource PrimaryBrush}" Margin="0,2,0,0" />
                                             </StackPanel>
                                         </StackPanel>
                                     </Border>
@@ -1398,7 +1398,7 @@
                                 </Grid>
                                 <TextBlock Grid.Column="1" Text="พิมพ์ชื่อหนังสือ เลขทะเบียน หมวดหมู่ หรือชั้นวาง..." FontSize="36"
                                            Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
-                                <Border Grid.Column="2" Width="76" Height="76" CornerRadius="38" Background="{StaticResource PrimaryBrush}" VerticalAlignment="Center">
+                                <Border Grid.Column="2" Width="76" Height="76" CornerRadius="38" Background="{DynamicResource PrimaryBrush}" VerticalAlignment="Center">
                                     <Grid Width="40" Height="40">
                                         <Ellipse Width="26" Height="26" Stroke="White" StrokeThickness="4" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="2" />
                                         <Line X1="24" Y1="24" X2="38" Y2="38" Stroke="White" StrokeThickness="4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
@@ -1524,7 +1524,7 @@
                                 <ScaleTransform ScaleX="1" ScaleY="1" />
                             </Border.RenderTransform>
                             <TextBlock Text="{Binding Pad.Mask}" FontFamily="{StaticResource MonoFontFamily}"
-                                       FontSize="56" Foreground="{StaticResource PrimaryBrush}"
+                                       FontSize="56" Foreground="{DynamicResource PrimaryBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
 
@@ -1647,7 +1647,7 @@
                                 <Border Background="{StaticResource SurfaceBrush}" CornerRadius="28" Padding="36,32" Margin="0,0,0,28">
                                     <StackPanel>
                                         <TextBlock Text="การเชื่อมต่อ" FontWeight="Bold" FontSize="36"
-                                                   Foreground="{StaticResource PrimaryBrush}" />
+                                                   Foreground="{DynamicResource PrimaryBrush}" />
                                         <TextBlock Text="ที่อยู่เซิร์ฟเวอร์ (Base URL)" FontSize="28"
                                                    Foreground="{StaticResource MutedBrush}" Margin="0,22,0,10" />
                                         <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}"
@@ -1656,7 +1656,7 @@
                                                      FontFamily="{StaticResource MonoFontFamily}" FontSize="32"
                                                      Foreground="{StaticResource TextBrush}" Background="Transparent"
                                                      BorderThickness="0" VerticalContentAlignment="Center" ContextMenu="{x:Null}"
-                                                     CaretBrush="{StaticResource PrimaryBrush}" />
+                                                     CaretBrush="{DynamicResource PrimaryBrush}" />
                                         </Border>
                                         <Grid Margin="0,22,0,0">
                                             <Grid.ColumnDefinitions>
@@ -1695,7 +1695,7 @@
                                 <Border Background="{StaticResource SurfaceBrush}" CornerRadius="28" Padding="36,32" Margin="0,0,0,28">
                                     <StackPanel>
                                         <TextBlock Text="การแสดงผล" FontWeight="Bold" FontSize="36"
-                                                   Foreground="{StaticResource PrimaryBrush}" />
+                                                   Foreground="{DynamicResource PrimaryBrush}" />
 
                                         <!-- system name: local override per kiosk (K2 item 5) -->
                                         <TextBlock Text="ชื่อระบบ (เครื่องนี้)" FontSize="28"
@@ -1705,7 +1705,7 @@
                                             <TextBox Text="{Binding SystemNameInput, UpdateSourceTrigger=PropertyChanged}"
                                                      FontSize="32" Foreground="{StaticResource TextBrush}" Background="Transparent"
                                                      BorderThickness="0" VerticalContentAlignment="Center" ContextMenu="{x:Null}"
-                                                     CaretBrush="{StaticResource PrimaryBrush}" />
+                                                     CaretBrush="{DynamicResource PrimaryBrush}" />
                                         </Border>
                                         <Grid Margin="0,14,0,0">
                                             <TextBlock Text="เว้นว่าง = ใช้ชื่อจากเซิร์ฟเวอร์" FontSize="24"
@@ -1743,7 +1743,7 @@
                                         <Grid Margin="0,22,0,0">
                                             <TextBlock Text="ความโปร่งใสพื้นหลังรายการ" FontSize="30" Foreground="{StaticResource TextBrush}" />
                                             <TextBlock HorizontalAlignment="Right" FontFamily="{StaticResource MonoFontFamily}"
-                                                       FontSize="30" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"
+                                                       FontSize="30" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}"
                                                        Text="{Binding BackgroundOpacityPercent, StringFormat={}{0:0}%}" />
                                         </Grid>
                                         <Slider Minimum="20" Maximum="100" Value="{Binding BackgroundOpacityPercent}"
@@ -1753,7 +1753,7 @@
                                         <Grid Margin="0,30,0,0">
                                             <TextBlock Text="ขนาดการแสดงผล" FontSize="30" Foreground="{StaticResource TextBrush}" />
                                             <TextBlock HorizontalAlignment="Right" FontFamily="{StaticResource MonoFontFamily}"
-                                                       FontSize="30" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"
+                                                       FontSize="30" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}"
                                                        Text="{Binding UiScalePercent, StringFormat={}{0:0}%}" />
                                         </Grid>
                                         <Slider Minimum="80" Maximum="120" Value="{Binding UiScalePercent}"
@@ -1772,8 +1772,8 @@
                                                         </Border>
                                                         <ControlTemplate.Triggers>
                                                             <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
-                                                                <Setter TargetName="M" Property="Background" Value="{StaticResource PrimaryBrush}" />
-                                                                <Setter TargetName="M" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                                                <Setter TargetName="M" Property="Background" Value="{DynamicResource PrimaryBrush}" />
+                                                                <Setter TargetName="M" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
                                                                 <Setter TargetName="T" Property="Foreground" Value="White" />
                                                             </DataTrigger>
                                                         </ControlTemplate.Triggers>
@@ -1790,8 +1790,8 @@
                                                         </Border>
                                                         <ControlTemplate.Triggers>
                                                             <DataTrigger Binding="{Binding IsFullscreen}" Value="False">
-                                                                <Setter TargetName="M" Property="Background" Value="{StaticResource PrimaryBrush}" />
-                                                                <Setter TargetName="M" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                                                <Setter TargetName="M" Property="Background" Value="{DynamicResource PrimaryBrush}" />
+                                                                <Setter TargetName="M" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
                                                                 <Setter TargetName="T" Property="Foreground" Value="White" />
                                                             </DataTrigger>
                                                         </ControlTemplate.Triggers>
@@ -1815,8 +1815,8 @@
                                                         </Border>
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsPressed" Value="True">
-                                                                <Setter TargetName="M" Property="Background" Value="{StaticResource PrimaryTintBrush}" />
-                                                                <Setter TargetName="M" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                                                <Setter TargetName="M" Property="Background" Value="{DynamicResource PrimaryTintBrush}" />
+                                                                <Setter TargetName="M" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
                                                             </Trigger>
                                                         </ControlTemplate.Triggers>
                                                     </ControlTemplate>
@@ -1833,8 +1833,8 @@
                                                         </Border>
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsPressed" Value="True">
-                                                                <Setter TargetName="M" Property="Background" Value="{StaticResource PrimaryTintBrush}" />
-                                                                <Setter TargetName="M" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                                                <Setter TargetName="M" Property="Background" Value="{DynamicResource PrimaryTintBrush}" />
+                                                                <Setter TargetName="M" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
                                                             </Trigger>
                                                         </ControlTemplate.Triggers>
                                                     </ControlTemplate>
@@ -1855,7 +1855,7 @@
                                                 <TextBox Text="{Binding ResWidthInput, UpdateSourceTrigger=PropertyChanged}"
                                                          FontFamily="{StaticResource MonoFontFamily}" FontSize="32" Foreground="{StaticResource TextBrush}"
                                                          Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center"
-                                                         ContextMenu="{x:Null}" CaretBrush="{StaticResource PrimaryBrush}" />
+                                                         ContextMenu="{x:Null}" CaretBrush="{DynamicResource PrimaryBrush}" />
                                             </Border>
                                             <TextBlock Grid.Column="1" Text="×" FontSize="34" Foreground="{StaticResource MutedBrush}"
                                                        VerticalAlignment="Center" Margin="18,0" />
@@ -1864,7 +1864,7 @@
                                                 <TextBox Text="{Binding ResHeightInput, UpdateSourceTrigger=PropertyChanged}"
                                                          FontFamily="{StaticResource MonoFontFamily}" FontSize="32" Foreground="{StaticResource TextBrush}"
                                                          Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center"
-                                                         ContextMenu="{x:Null}" CaretBrush="{StaticResource PrimaryBrush}" />
+                                                         ContextMenu="{x:Null}" CaretBrush="{DynamicResource PrimaryBrush}" />
                                             </Border>
                                         </Grid>
                                         <Button Content="ใช้ความละเอียดนี้" Style="{StaticResource SecondaryButtonStyle}" FontSize="28"
@@ -1879,7 +1879,7 @@
                                 <Border Background="{StaticResource SurfaceBrush}" CornerRadius="28" Padding="36,32" Margin="0,0,0,28">
                                     <StackPanel>
                                         <TextBlock Text="ธีมสี (สีหลัก)" FontWeight="Bold" FontSize="36"
-                                                   Foreground="{StaticResource PrimaryBrush}" />
+                                                   Foreground="{DynamicResource PrimaryBrush}" />
                                         <TextBlock Text="เปลี่ยนสีหลักของจอ — ปุ่ม/แท็บหมวด/ส่วนหัว/พื้นหลัง เปลี่ยนตามทันที (ตัวอักษรปรับให้อ่านออกอัตโนมัติ)"
                                                    FontSize="26" Foreground="{StaticResource TextSecondBrush}" TextWrapping="Wrap" Margin="0,8,0,18" />
 
@@ -1906,7 +1906,7 @@
                                                     <TextBox Text="{Binding PrimaryColorInput, UpdateSourceTrigger=PropertyChanged}"
                                                              FontFamily="{StaticResource MonoFontFamily}" FontSize="32" Foreground="{StaticResource TextBrush}"
                                                              Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center"
-                                                             ContextMenu="{x:Null}" CaretBrush="{StaticResource PrimaryBrush}" />
+                                                             ContextMenu="{x:Null}" CaretBrush="{DynamicResource PrimaryBrush}" />
                                                 </Border>
                                             </StackPanel>
                                             <!-- live preview: fill = PrimaryBrush, text = OnPrimaryBrush -->
@@ -1964,7 +1964,7 @@
                                 <Border Background="{StaticResource SurfaceBrush}" CornerRadius="28" Padding="36,32" Margin="0,0,0,28">
                                     <StackPanel>
                                         <TextBlock Text="ความปลอดภัย" FontWeight="Bold" FontSize="36"
-                                                   Foreground="{StaticResource PrimaryBrush}" />
+                                                   Foreground="{DynamicResource PrimaryBrush}" />
                                         <Button Content="เปลี่ยน PIN" Style="{StaticResource SecondaryButtonStyle}"
                                                 Command="{Binding StartChangePinCommand}" HorizontalAlignment="Left" Margin="0,22,0,0" />
                                         <TextBlock Text="{Binding ChangePinResult}" FontSize="28" FontWeight="SemiBold"
@@ -1977,7 +1977,7 @@
                                 <Border Background="{StaticResource SurfaceBrush}" CornerRadius="28" Padding="36,32" Margin="0,0,0,28">
                                     <StackPanel>
                                         <TextBlock Text="ระบบ" FontWeight="Bold" FontSize="36"
-                                                   Foreground="{StaticResource PrimaryBrush}" />
+                                                   Foreground="{DynamicResource PrimaryBrush}" />
 
                                         <!-- auto-start toggle -->
                                         <Grid Margin="0,22,0,0">
@@ -2023,7 +2023,7 @@
                                 <Border Background="{StaticResource SurfaceBrush}" CornerRadius="28" Padding="36,32">
                                     <StackPanel>
                                         <TextBlock Text="เกี่ยวกับ" FontWeight="Bold" FontSize="36"
-                                                   Foreground="{StaticResource PrimaryBrush}" />
+                                                   Foreground="{DynamicResource PrimaryBrush}" />
                                         <TextBlock Text="{Binding AboutVersion}" FontSize="28"
                                                    Foreground="{StaticResource TextSecondBrush}" Margin="0,16,0,0" />
                                     </StackPanel>
@@ -2132,7 +2132,7 @@
                         HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="900"
                         DataContext="{Binding Settings}">
                     <StackPanel>
-                        <TextBlock Text="ตั้งค่าเริ่มต้น" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"
+                        <TextBlock Text="ตั้งค่าเริ่มต้น" Foreground="{DynamicResource PrimaryBrush}" FontWeight="Bold"
                                    FontSize="48" HorizontalAlignment="Center" />
                         <TextBlock Text="กรอกที่อยู่เซิร์ฟเวอร์ (Base URL) ของเครื่อง Admin เพื่อเริ่มใช้งาน"
                                    Foreground="{StaticResource TextSecondBrush}" FontSize="30" TextAlignment="Center"
@@ -2143,7 +2143,7 @@
                                      FontFamily="{StaticResource MonoFontFamily}" FontSize="32"
                                      Foreground="{StaticResource TextBrush}" Background="Transparent"
                                      BorderThickness="0" VerticalContentAlignment="Center" ContextMenu="{x:Null}"
-                                     CaretBrush="{StaticResource PrimaryBrush}" />
+                                     CaretBrush="{DynamicResource PrimaryBrush}" />
                         </Border>
                         <TextBlock Text="ตัวอย่าง: http://192.168.1.50:45269" Foreground="{StaticResource MutedBrush}"
                                    FontSize="24" HorizontalAlignment="Center" Margin="0,12,0,0"
@@ -2166,12 +2166,12 @@
                 <Border Background="{StaticResource SurfaceBrush}" CornerRadius="40" Padding="64,56"
                         HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="900">
                     <StackPanel>
-                        <Border Width="150" Height="150" CornerRadius="75" Background="{StaticResource PrimaryTintBrush}"
+                        <Border Width="150" Height="150" CornerRadius="75" Background="{DynamicResource PrimaryTintBrush}"
                                 HorizontalAlignment="Center">
                             <Viewbox Width="78" Height="78" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <Canvas Width="24" Height="24">
                                     <!-- key glyph: signals a PIN/security change -->
-                                    <Path Fill="{StaticResource PrimaryBrush}"
+                                    <Path Fill="{DynamicResource PrimaryBrush}"
                                           Data="M21 10h-8.35A5.99 5.99 0 0 0 7 6a6 6 0 0 0 0 12 5.99 5.99 0 0 0 5.65-4H13l2 2 2-2 2 2 3-3-1-3zM7 14a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" />
                                 </Canvas>
                             </Viewbox>
