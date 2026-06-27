@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR; 
 using System.Management; // สำหรับอ่านรหัสเมนบอร์ด (Motherboard Serial)
-using System.Net.Http.Json; // สำหรับสื่อสารกับ Issuer VPS
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,39 +42,16 @@ var programDataRoot = Path.Combine(
 Directory.CreateDirectory(programDataRoot);
 
 var licenseFilePath = Path.Combine(programDataRoot, "license.key");
-var defaultKeysListPath = Path.Combine(programDataRoot, "license_keys_10000.csv");
-
-// 🌐 การตั้งค่าเชื่อมต่อกับ Issuer VPS และ กุญแจสาธารณะ
-// 🌐 เปลี่ยน localhost เป็นลิงก์ Serveo เพื่อให้ Tester เชื่อมต่อได้
-var issuerUrl = builder.Configuration["License:IssuerUrl"] ?? "https://46ee8083041dad99-184-22-108-83.serveousercontent.com";
+// ------------------------------------------------------
+// License (offline - hardware-bound - hash+salt)
+// The product key is a deterministic hash of this machine's Machine Code + a shared SALT,
+// formatted XXXX-XXXX-XXXX-XXXX - the exact same scheme as the keygen tool. Verification is
+// fully OFFLINE: no issuer/VPS, no RSA signature, no CSV key list. The SALT is the shared
+// secret and MUST match the keygen byte-for-byte; it is read from config (License:Salt) and
+// is NEVER committed to git (lives only in the gitignored appsettings.json / staged build).
+// ------------------------------------------------------
 var bypassInDev = builder.Configuration.GetValue("License:BypassInDevelopment", true);
-
-// 🔑 นำ Public Key ที่คุณเจนได้จาก KeyGenTool มาวางที่นี่
-var publicKeyPem = @"-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv8XKsCGfz8UUkiwLprIW
-HeY4d81sNpb1zluaqCKRowexp2FaNiAlhmFGyamRYOft5cWqSpLjwigf3ApvOttm
-py5uZ3VW/H4HgIgimU6YrAw1AvpFN9rMGZnlcuUa9o2Tn+yBx/443FNKT1AQEnvP
-MIFCpM1YbHqXmj6JGF8FYMLQYrG1XajlSpdEz5/WtZFCiq+TgDBFgNmbXANQeV4N
-LG9OyCr/YGZiVUocTcT8BA9kToum4tC/7VvlbO/gCE8mX13Tsfpojx6eQL8uYmpL
-hTgW98zm+7LQai0151myoAAHk9MJ3XVP/LUA2oUbmDPr6IPLkGqPwJY6Yn/ey7G2
-9QIDAQAB
------END PUBLIC KEY-----";
-
-
-
-
-
-
-
-
-
-var keysListPath = builder.Configuration["License:KeysFile"] ?? defaultKeysListPath;
-var requireKeyList = builder.Configuration.GetValue("License:RequireKeyList", false);
-
-var exeDir = AppContext.BaseDirectory;
-var keysListFallback = Path.Combine(exeDir, "license_keys_10000.csv");
-if (!File.Exists(keysListPath) && File.Exists(keysListFallback))
-    keysListPath = keysListFallback;
+var licenseSalt = builder.Configuration["License:Salt"] ?? "";
 
 var dbPath = builder.Configuration["Storage:DbPath"] ?? Path.Combine(programDataRoot, "library.db");
 Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
@@ -121,14 +97,13 @@ app.MapHub<LibraryHub>("/hubs/library");
 var contentTypeProvider = new FileExtensionContentTypeProvider();
 
 // ------------------------------------------------------
-// 🚨 License runtime state (Hardware-Bound / RSA Verify)
+// 🚨 License runtime state (Hardware-Bound / Offline hash+salt)
 // ------------------------------------------------------
 var licenseState = new LicenseState(
     envName: builder.Environment.EnvironmentName,
     licensePath: licenseFilePath,
-    issuerUrl: issuerUrl,
-    publicKeyPem: publicKeyPem,       // ✅ แก้ให้ชื่อตรงกับพารามิเตอร์
-    bypassInDevelopment: bypassInDev  // ✅ แก้ให้ชื่อตรงกับพารามิเตอร์
+    salt: licenseSalt,
+    bypassInDevelopment: bypassInDev
 );
 
 // ตรวจสอบสถานะลิขสิทธิ์จากบอร์ดทันทีที่เปิดโปรแกรม
@@ -268,15 +243,14 @@ string? FindCoverPath(string regNo, out string? contentType)
 }
 
 // ======================================================
-// 🚨 LICENSE API (ผูกบอร์ด + VPS)
+// 🚨 LICENSE API (ผูกฮาร์ดแวร์ + ตรวจ offline hash+salt)
 // ======================================================
 app.MapGet("/api/license/status", () => Results.Ok(new
 {
     isLicensed = licenseState.IsLicensed,
     message = licenseState.Message,
     machineId = licenseState.MachineId,
-    licenseFile = licenseFilePath,
-    issuerUrl = issuerUrl
+    licenseFile = licenseFilePath
 }));
 
 app.MapPost("/api/license/activate", async (ActivateLicenseDto body) =>
@@ -585,7 +559,18 @@ app.MapGet("/", () => Results.Ok(new { message = "LibraHub Server running (Hardw
 app.Run();
 
 // ======================================================
-// 🚨 LICENSE STATE (ผูกเมนบอร์ด + RSA Verification)
+// 🚨 LICENSE STATE (Offline · Hardware-Bound · hash+salt)
+// ------------------------------------------------------
+// Verification is fully OFFLINE and deterministic, mirroring the keygen tool:
+//
+//   clean   = MachineCode.Trim().ToUpperInvariant()
+//   hex     = SHA256(clean + SALT) as 64 lowercase hex chars
+//   raw     = hex[0..16].ToUpperInvariant()        // first 16 HEX CHARS (not bytes!)
+//   key     = raw[0..4]-raw[4..8]-raw[8..12]-raw[12..16]
+//
+// The license.key file just stores the activated key string; on every load we recompute the
+// expected key from THIS machine's current MachineId and compare — so a key/file copied from
+// another machine never validates (hardware binding is implicit in the hash input).
 // ======================================================
 public sealed class LicenseState {
     public bool IsLicensed { get; private set; }
@@ -594,75 +579,114 @@ public sealed class LicenseState {
 
     private readonly string _envName;
     private readonly string _licensePath;
-    private readonly string _issuerUrl;
-    private readonly string _publicKey;
+    private readonly string _salt;
     private readonly bool _bypassDev;
-    private static readonly HttpClient _http = new HttpClient();
 
-    // ✅ ปรับชื่อพารามิเตอร์ให้ตรงกับจุดที่เรียกใช้งานด้านบน
-    public LicenseState(string envName, string licensePath, string issuerUrl, string publicKeyPem, bool bypassInDevelopment) {
-         _envName = envName; 
-        _licensePath = licensePath; 
-        _issuerUrl = issuerUrl; 
-        _publicKey = publicKeyPem; 
-        _bypassDev = bypassInDevelopment; 
-        MachineId = GetMainboardSerial();
+    public LicenseState(string envName, string licensePath, string salt, bool bypassInDevelopment) {
+        _envName = envName;
+        _licensePath = licensePath;
+        _salt = salt ?? "";
+        _bypassDev = bypassInDevelopment;
+        MachineId = GetMachineCode();
     }
 
-    public async Task ReloadAsync() {
-        if (string.Equals(_envName, "Development", StringComparison.OrdinalIgnoreCase) && _bypassDev) { 
-            IsLicensed = true; Message = "Licensed (Bypass Mode)"; return; 
+    public Task ReloadAsync() {
+        if (string.Equals(_envName, "Development", StringComparison.OrdinalIgnoreCase) && _bypassDev) {
+            IsLicensed = true; Message = "Licensed (Bypass Mode - Development)"; return Task.CompletedTask;
         }
-        if (!File.Exists(_licensePath)) { IsLicensed = false; Message = "Unlicensed (No key found)"; return; }
+        if (string.IsNullOrWhiteSpace(_salt)) {
+            IsLicensed = false; Message = "Unlicensed (server license salt not configured)."; return Task.CompletedTask;
+        }
+        if (!File.Exists(_licensePath)) {
+            IsLicensed = false; Message = "Unlicensed (No key found)."; return Task.CompletedTask;
+        }
 
         try {
-            var json = File.ReadAllText(_licensePath);
-            var license = JsonSerializer.Deserialize<LicenseFile>(json);
-            
-            if (license?.machineId != MachineId) {
-                IsLicensed = false; Message = "Invalid License: Machine mismatch."; return;
-            }
-
-            var payload = $"{license.key}|{license.machineId}|{license.issuedAt}";
-            if (VerifySignature(_publicKey, payload, license.sig ?? "")) {
-                IsLicensed = true; Message = "Licensed (OEM Hardware Authenticated)";
+            var stored = File.ReadAllText(_licensePath);
+            var expected = ComputeKey(MachineId);
+            if (KeysEqual(stored, expected)) {
+                IsLicensed = true; Message = "Licensed (Offline Hardware-Bound).";
             } else {
-                IsLicensed = false; Message = "Invalid Signature: License file tampered.";
+                IsLicensed = false; Message = "Invalid License Key for this machine.";
             }
-        } catch { IsLicensed = false; Message = "Invalid license format."; }
+        } catch {
+            IsLicensed = false; Message = "Invalid license file.";
+        }
+        return Task.CompletedTask;
     }
 
     public async Task<(bool ok, string msg)> TryActivateAsync(string key) {
-        try {
-            var res = await _http.PostAsJsonAsync($"{_issuerUrl}/api/issue", new { key, machineId = MachineId });
-            if (!res.IsSuccessStatusCode) return (false, "Activation failed: " + await res.Content.ReadAsStringAsync());
+        if (string.IsNullOrWhiteSpace(_salt))
+            return (false, "License not configured on server (missing salt).");
 
-            var licenseData = await res.Content.ReadAsStringAsync();
-            File.WriteAllText(_licensePath, licenseData); 
-            await ReloadAsync();
-            return (IsLicensed, Message);
-        } catch (Exception ex) { return (false, "Connection Error: " + ex.Message); }
+        var expected = ComputeKey(MachineId);
+        if (!KeysEqual(key, expected))
+            return (false, "Invalid product key for this machine.");
+
+        try {
+            File.WriteAllText(_licensePath, expected); // store the canonical formatted key
+        } catch (Exception ex) {
+            return (false, "Could not save license file: " + ex.Message);
+        }
+
+        await ReloadAsync();
+        return (IsLicensed, Message);
     }
 
-    private static bool VerifySignature(string publicKeyPem, string payload, string signatureBase64) {
-        try {
-            using var rsa = RSA.Create();
-            rsa.ImportFromPem(publicKeyPem);
-            var data = Encoding.UTF8.GetBytes(payload);
-            var signature = Convert.FromBase64String(signatureBase64);
-            return rsa.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-        } catch { return false; }
+    // SHA256(clean + SALT) -> first 16 HEX CHARS upper -> XXXX-XXXX-XXXX-XXXX (matches keygen).
+    private string ComputeKey(string machineCode) {
+        var clean = (machineCode ?? "").Trim().ToUpperInvariant();
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(clean + _salt));
+        var hex = Convert.ToHexString(bytes).ToLowerInvariant(); // 64 lowercase hex chars
+        var raw = hex.Substring(0, 16).ToUpperInvariant();       // first 16 HEX CHARS (not 16 bytes)
+        return $"{raw.Substring(0, 4)}-{raw.Substring(4, 4)}-{raw.Substring(8, 4)}-{raw.Substring(12, 4)}";
     }
 
-    private static string GetMainboardSerial() {
+    // Compare keys tolerant of spacing/dashes/case (so user input "8cc8 6165..." == "8CC8-6165-...").
+    private static bool KeysEqual(string? a, string? b) =>
+        string.Equals(NormalizeKey(a), NormalizeKey(b), StringComparison.Ordinal) && NormalizeKey(a).Length > 0;
+
+    private static string NormalizeKey(string? key) {
+        if (string.IsNullOrEmpty(key)) return "";
+        var sb = new StringBuilder(key.Length);
+        foreach (var c in key)
+            if (char.IsLetterOrDigit(c)) sb.Append(char.ToUpperInvariant(c));
+        return sb.ToString();
+    }
+
+    // Machine Code = a stable hardware identifier, fed verbatim to the keygen. Fallback chain so a
+    // board with no serial still yields something usable; the displayed Machine ID is exactly this
+    // string and the customer copies it into the keygen verbatim.
+    private static string GetMachineCode() {
+        var board = QueryWmi("SELECT SerialNumber FROM Win32_BaseBoard", "SerialNumber");
+        if (board != null) return board.ToUpperInvariant();
+
+        var cpu = QueryWmi("SELECT ProcessorId FROM Win32_Processor", "ProcessorId");
+        if (cpu != null) return ("CPU-" + cpu).ToUpperInvariant();
+
+        var disk = QueryWmi("SELECT SerialNumber FROM Win32_PhysicalMedia", "SerialNumber");
+        if (disk != null) return ("DISK-" + disk).ToUpperInvariant();
+
+        // Last resort — NOTE: machine name changes if the PC is renamed (would break the license).
+        return ("MB-UNKNOWN-" + Environment.MachineName).ToUpperInvariant();
+    }
+
+    private static string? QueryWmi(string query, string prop) {
         try {
-            using var s = new ManagementObjectSearcher("SELECT SerialNumber FROM Win32_BaseBoard");
-            foreach (var w in s.Get()) {
-                var sn = w["SerialNumber"]?.ToString()?.Trim();
-                if (!string.IsNullOrEmpty(sn) && sn != "Default string") return sn.ToUpper();
+            using var searcher = new ManagementObjectSearcher(query);
+            foreach (var o in searcher.Get()) {
+                var v = o[prop]?.ToString()?.Trim();
+                if (IsUsable(v)) return v;
             }
         } catch { }
-        return "MB-UNKNOWN-" + Environment.MachineName.ToUpper();
+        return null;
+    }
+
+    private static bool IsUsable(string? s) {
+        if (string.IsNullOrWhiteSpace(s)) return false;
+        var t = s.Trim();
+        return t != "Default string" && t != "None" && t != "0" &&
+               t != "To be filled by O.E.M." && t != "System Serial Number";
     }
 }
 
@@ -737,4 +761,3 @@ public sealed class KioskRegistry
     public int ActiveCount => _kiosks.Count;
 }
 public sealed class ActivateLicenseDto { public string? key { get; set; } }
-public sealed class LicenseFile { public string? key { get; set; } public string? machineId { get; set; } public string? issuedAt { get; set; } public string? sig { get; set; } }

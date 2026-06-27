@@ -152,9 +152,13 @@
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                         <TextBlock Text="Machine ID" Width="110" VerticalAlignment="Top"
                                    Foreground="{StaticResource TextSecondBrush}"/>
-                        <TextBlock x:Name="TxtMachineId" Text="-" Width="240"
-                                   FontFamily="{StaticResource MonoFontFamily}"
-                                   Foreground="{StaticResource TextBrush}" TextWrapping="Wrap"/>
+                        <!-- Read-only but selectable so the team can copy the EXACT machine code into the keygen. -->
+                        <TextBox x:Name="TxtMachineId" Text="-" Width="240"
+                                 FontFamily="{StaticResource MonoFontFamily}"
+                                 Foreground="{StaticResource TextBrush}" TextWrapping="Wrap"
+                                 IsReadOnly="True" IsReadOnlyCaretVisible="True"
+                                 BorderThickness="0" Background="Transparent" Padding="0" IsTabStop="False"
+                                 ToolTip="Machine Code — คัดลอกค่านี้ทั้งหมดไปกรอกใน keygen"/>
                     </StackPanel>
 
                     <!-- B6: static package facts (license is perpetual / per-package; NOT a live counter) -->

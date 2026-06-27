@@ -1,7 +1,7 @@
 @echo off
 :: LibraHub - start Server then Admin. Uses start /D so each app's working directory is its
-:: own folder (the server must run with cwd = its folder to read appsettings.json / AdminKey
-:: and find the license CSV next to the exe).
+:: own folder (the server must run with cwd = its folder to read appsettings.json, which holds
+:: the AdminKey and the License:Salt used for offline activation).
 cd /d "%~dp0"
 echo ===================================================
 echo    LibraHub - Server + Admin
