@@ -20,6 +20,8 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    <!-- Run the server as a Windows Service (auto-start, no console) in production. -->
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
 
     <!-- ✅ เพิ่ม: อ่าน Excel .xlsx -->
     <PackageReference Include="ClosedXML" Version="0.105.0" />

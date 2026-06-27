@@ -50,8 +50,8 @@ Name: "en"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Dirs]
-; Pre-create the data root (admin rights) so the server (running as a normal user) can write
-; library.db without permission issues.
+; Pre-create the data root (admin rights) so the server (the LibraHubServer service, running as
+; LocalSystem) can write library.db / branding / logs without permission issues.
 Name: "{commonappdata}\LibrarySystem"
 
 [Files]
@@ -59,11 +59,13 @@ Source: "{#DistDir}\Server\*";  DestDir: "{app}\Server";  Flags: recursesubdirs 
 Source: "{#DistDir}\AdminPC\*"; DestDir: "{app}\AdminPC"; Flags: recursesubdirs createallsubdirs ignoreversion
 Source: "LibraHub.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "StartAll.bat";  DestDir: "{app}"; Flags: ignoreversion
+Source: "RestartLibraHubServer.bat"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
+; The server runs as the "LibraHubServer" Windows Service (auto-start) - no server shortcut, no
+; "start both" launcher (a second server copy would clash on TCP 45269). Only the Admin app.
 Name: "{group}\LibraHub Admin";  Filename: "{app}\AdminPC\LibraryAdminPC.exe"; WorkingDir: "{app}\AdminPC"; IconFilename: "{app}\LibraHub.ico"
-Name: "{group}\LibraHub Server"; Filename: "{app}\Server\LibraryApiServer.exe"; WorkingDir: "{app}\Server"; IconFilename: "{app}\LibraHub.ico"
-Name: "{group}\Start LibraHub (Server + Admin)"; Filename: "{app}\StartAll.bat"; WorkingDir: "{app}"; IconFilename: "{app}\LibraHub.ico"
+Name: "{group}\Restart LibraHub Server (support)"; Filename: "{app}\RestartLibraHubServer.bat"; WorkingDir: "{app}"; IconFilename: "{app}\LibraHub.ico"
 Name: "{group}\Uninstall LibraHub"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\LibraHub Admin"; Filename: "{app}\AdminPC\LibraryAdminPC.exe"; WorkingDir: "{app}\AdminPC"; IconFilename: "{app}\LibraHub.ico"; Tasks: desktopicon
 
@@ -72,10 +74,14 @@ Name: "{autodesktop}\LibraHub Admin"; Filename: "{app}\AdminPC\LibraryAdminPC.ex
 ; (avoid duplicates on reinstall), then add.
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""LibraHub Server 45269"""; Flags: runhidden; StatusMsg: "Configuring Firewall (port 45269)..."
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""LibraHub Server 45269"" dir=in action=allow protocol=TCP localport=45269"; Flags: runhidden; StatusMsg: "Configuring Firewall (port 45269)..."
-; Optional: launch the system right after install
-Filename: "{app}\StartAll.bat"; Description: "Start LibraHub now"; WorkingDir: "{app}"; Flags: postinstall nowait skipifsilent
+; The LibraHubServer service is (re)created and started from [Code] (CurStepChanged ssPostInstall),
+; AFTER the AdminKey is provisioned into appsettings.json so the service reads the correct key.
+; Optional: open the Admin app right after install (the server is already running as a service).
+Filename: "{app}\AdminPC\LibraryAdminPC.exe"; Description: "Open LibraHub Admin now"; WorkingDir: "{app}\AdminPC"; Flags: postinstall nowait skipifsilent
 
 [UninstallRun]
+; Service stop/delete is done in [Code] (CurUninstallStepChanged) so it can wait for the process
+; to release the exe before files are removed. Here we only drop the firewall rule.
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""LibraHub Server 45269"""; Flags: runhidden; RunOnceId: "DelLibraHubFwRule"
 
 [Code]
@@ -132,10 +138,55 @@ begin
     GKeyIsNew := False;  { upgrade - keep the existing AdminKey untouched }
 end;
 
+{ Stop + delete the service (best-effort). Used before file copy on upgrade so the running
+  service releases LibraryApiServer.exe, and to clear any stale definition before (re)creating. }
+procedure StopAndDeleteService();
+var rc: Integer;
+begin
+  Exec('sc.exe', 'stop LibraHubServer', '', SW_HIDE, ewWaitUntilTerminated, rc);
+  Sleep(1500); { let the process exit so the exe is unlocked }
+  Exec('sc.exe', 'delete LibraHubServer', '', SW_HIDE, ewWaitUntilTerminated, rc);
+  Sleep(500);
+end;
+
+{ Create the auto-start service as LocalSystem, set crash auto-restart, and start it.
+  Called AFTER ProvisionAdminKey so the service reads the freshly written AdminKey. The .NET
+  host pins ContentRoot to the exe folder, so appsettings.json (License:Salt) is found even
+  though a service starts with CWD = C:\Windows\System32. }
+procedure CreateAndStartService();
+var rc: Integer; binPath: string;
+begin
+  binPath := ExpandConstant('{app}\Server\LibraryApiServer.exe');
+  Exec('sc.exe', 'create LibraHubServer binPath= "' + binPath + '" start= auto obj= LocalSystem DisplayName= "LibraHub Server"', '', SW_HIDE, ewWaitUntilTerminated, rc);
+  Exec('sc.exe', 'description LibraHubServer "LibraHub library API server (auto-start, runs in background)."', '', SW_HIDE, ewWaitUntilTerminated, rc);
+  { On crash: restart after 5s, up to 3 times, reset the counter daily. }
+  Exec('sc.exe', 'failure LibraHubServer reset= 86400 actions= restart/5000/restart/5000/restart/5000', '', SW_HIDE, ewWaitUntilTerminated, rc);
+  Exec('sc.exe', 'start LibraHubServer', '', SW_HIDE, ewWaitUntilTerminated, rc);
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
+  if CurStep = ssInstall then
+    StopAndDeleteService();   { release exe lock on upgrade, before [Files] copy }
   if CurStep = ssPostInstall then
-    ProvisionAdminKey();
+  begin
+    ProvisionAdminKey();      { write AdminKey into appsettings.json FIRST }
+    CreateAndStartService();  { then (re)create + start the service so it reads that key }
+  end;
+end;
+
+{ Uninstall: stop + delete the service before Inno removes the files (waits for the process
+  to release the exe). Firewall rule is dropped via [UninstallRun]. }
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var rc: Integer;
+begin
+  if CurUninstallStep = usUninstall then
+  begin
+    Exec('sc.exe', 'stop LibraHubServer', '', SW_HIDE, ewWaitUntilTerminated, rc);
+    Sleep(2000);
+    Exec('sc.exe', 'delete LibraHubServer', '', SW_HIDE, ewWaitUntilTerminated, rc);
+    Sleep(500);
+  end;
 end;
 
 procedure CurPageChanged(CurPageID: Integer);
