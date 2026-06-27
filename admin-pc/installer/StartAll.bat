@@ -1,24 +1,15 @@
 @echo off
-:: LibraHub - start Server then Admin. Uses start /D so each app's working directory is its
-:: own folder (the server must run with cwd = its folder to read appsettings.json, which holds
-:: the AdminKey and the License:Salt used for offline activation).
+:: LibraHub - launch the Admin app.
+:: The Server now runs as a Windows Service ("LibraHubServer", start=auto), so it is already
+:: running in the background from boot - this script no longer starts the server (starting a
+:: second copy would clash on TCP 45269). To control the service use RestartLibraHubServer.bat
+:: or services.msc.
 cd /d "%~dp0"
 echo ===================================================
-echo    LibraHub - Server + Admin
+echo    LibraHub - Admin
 echo ===================================================
 
-echo [1/2] Starting LibraHub Server...
-if exist "Server\LibraryApiServer.exe" (
-    start "LibraHub Server" /D "%~dp0Server" "%~dp0Server\LibraryApiServer.exe"
-) else (
-    echo [ERROR] Server\LibraryApiServer.exe not found.
-    pause
-    exit /b 1
-)
-
-timeout /t 3 /nobreak >nul
-
-echo [2/2] Starting LibraHub Admin...
+echo Starting LibraHub Admin...
 if exist "AdminPC\LibraryAdminPC.exe" (
     start "" /D "%~dp0AdminPC" "%~dp0AdminPC\LibraryAdminPC.exe"
 ) else (

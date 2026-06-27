@@ -12,7 +12,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR; 
 using System.Management; // สำหรับอ่านรหัสเมนบอร์ด (Motherboard Serial)
 
-var builder = WebApplication.CreateBuilder(args);
+// Host the server so it runs as a Windows Service in production (auto-start, no console)
+// yet stays a normal console app for dev (UseWindowsService is a no-op outside the SCM).
+// ContentRootPath is pinned to the exe folder so appsettings.json (License:Salt, AdminKey)
+// is ALWAYS found: a Windows Service starts with CWD = C:\Windows\System32, which would
+// otherwise leave the salt empty -> server unlicensed -> every /api/* returns 403.
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = AppContext.BaseDirectory
+});
+builder.Host.UseWindowsService();
 
 // ✅ บังคับให้ Server ฟังทุก IP ในวง LAN (เปิดทางให้ Kiosk คุยได้)
 // Default port 45269 (เลี่ยงชนระบบอื่น); ปรับได้ผ่าน config "Urls" (appsettings/env) เผื่ออนาคต.
