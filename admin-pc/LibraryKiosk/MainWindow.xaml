@@ -1463,7 +1463,7 @@
             <!-- ===================== ADMIN SETTINGS OVERLAY (Phase 5) ===================== -->
             <!-- Visibility driven by IsOpen via the trigger so the overlay fades in/out
                  (panels also slide up via OverlayPanelSlideStyle) instead of blinking. -->
-            <Grid x:Name="SettingsOverlay" DataContext="{Binding Settings}" Visibility="Collapsed">
+            <Grid x:Name="SettingsOverlay" Panel.ZIndex="50" DataContext="{Binding Settings}" Visibility="Collapsed">
                 <Grid.Style>
                     <Style TargetType="Grid">
                         <Style.Triggers>
@@ -2036,7 +2036,23 @@
 
             <!-- ===== SHARED OVERLAY: error / unlicensed (portrait + landscape) ===== -->
             <!-- ===================== ERROR (unreachable) ===================== -->
-            <Grid Visibility="{Binding IsErrorVisible, Converter={StaticResource BoolToVis}}">
+            <Grid Panel.ZIndex="10">
+                <!-- Below the Settings/PIN overlay (ZIndex 50) AND hidden while settings is open,
+                     so the admin can always reach the PIN gate to fix the URL when offline. -->
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsErrorVisible}" Value="True" />
+                                    <Condition Binding="{Binding Settings.IsOpen}" Value="False" />
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible" />
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
                 <Border Background="#E60F1A33" />
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="820">
                     <Border Width="200" Height="200" CornerRadius="100" Background="#1FFFFFFF"
@@ -2072,7 +2088,23 @@
             </Grid>
 
             <!-- ===================== UNLICENSED ===================== -->
-            <Grid Visibility="{Binding IsUnlicensedVisible, Converter={StaticResource BoolToVis}}">
+            <Grid Panel.ZIndex="10">
+                <!-- Same as the error overlay: below Settings (50) and hidden while settings is
+                     open, so the PIN gate is always reachable. -->
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsUnlicensedVisible}" Value="True" />
+                                    <Condition Binding="{Binding Settings.IsOpen}" Value="False" />
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible" />
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
                 <Border Background="#E60F1A33" />
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="820">
                     <TextBlock Text="เซิร์ฟเวอร์ยังไม่ได้เปิดใช้งานลิขสิทธิ์" Foreground="White" FontWeight="Bold"
@@ -2087,9 +2119,49 @@
                         VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,48,48,0" />
             </Grid>
 
+            <!-- ===================== FIRST-RUN SETUP (set server URL) =====================
+                 Shown on a brand-new install (KioskSettings.Configured == false) so the kiosk
+                 asks for the real server URL instead of failing against the default IP. Single
+                 centred card (fills the design canvas in both portrait & landscape). The card
+                 reuses the Settings VM's URL field + SaveBaseUrl (validate -> save -> rebind ->
+                 reload); a reachable server marks the kiosk Configured and closes this overlay.
+                 ZIndex 90: above content/error/settings, below the Notice (100). -->
+            <Grid Panel.ZIndex="90" Visibility="{Binding IsSetupVisible, Converter={StaticResource BoolToVis}}">
+                <Border Background="#F50F1A33" />
+                <Border Background="{StaticResource SurfaceBrush}" CornerRadius="40" Padding="64,56"
+                        HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="900"
+                        DataContext="{Binding Settings}">
+                    <StackPanel>
+                        <TextBlock Text="ตั้งค่าเริ่มต้น" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"
+                                   FontSize="48" HorizontalAlignment="Center" />
+                        <TextBlock Text="กรอกที่อยู่เซิร์ฟเวอร์ (Base URL) ของเครื่อง Admin เพื่อเริ่มใช้งาน"
+                                   Foreground="{StaticResource TextSecondBrush}" FontSize="30" TextAlignment="Center"
+                                   TextWrapping="Wrap" HorizontalAlignment="Center" Margin="0,18,0,0" />
+                        <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="2" CornerRadius="18" Padding="22,0" Height="92" Margin="0,32,0,0">
+                            <TextBox Text="{Binding BaseUrlInput, UpdateSourceTrigger=PropertyChanged}"
+                                     FontFamily="{StaticResource MonoFontFamily}" FontSize="32"
+                                     Foreground="{StaticResource TextBrush}" Background="Transparent"
+                                     BorderThickness="0" VerticalContentAlignment="Center" ContextMenu="{x:Null}"
+                                     CaretBrush="{StaticResource PrimaryBrush}" />
+                        </Border>
+                        <TextBlock Text="ตัวอย่าง: http://192.168.1.50:45269" Foreground="{StaticResource MutedBrush}"
+                                   FontSize="24" HorizontalAlignment="Center" Margin="0,12,0,0"
+                                   FontFamily="{StaticResource MonoFontFamily}" />
+                        <Button Content="ทดสอบ และ บันทึก" Style="{StaticResource PrimaryButtonStyle}" FontSize="32"
+                                Command="{Binding SaveBaseUrlCommand}"
+                                IsEnabled="{Binding IsBusy, Converter={StaticResource InvBool}}"
+                                HorizontalAlignment="Center" Margin="0,36,0,0" />
+                        <TextBlock Text="{Binding ConnectionStatus}" Foreground="{StaticResource TextSecondBrush}"
+                                   FontSize="28" TextAlignment="Center" TextWrapping="Wrap"
+                                   HorizontalAlignment="Center" Margin="0,24,0,0" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
             <!-- ===== SHARED OVERLAY: transient notice (e.g. admin PIN reset). Topmost so it
                  shows above settings/lock; tap anywhere or the button to dismiss; auto-hides. -->
-            <Grid x:Name="NoticeOverlay" Visibility="{Binding IsNoticeVisible, Converter={StaticResource BoolToVis}}"
+            <Grid x:Name="NoticeOverlay" Panel.ZIndex="100" Visibility="{Binding IsNoticeVisible, Converter={StaticResource BoolToVis}}"
                   Background="#990F1A33" MouseDown="Notice_Dismiss" TouchDown="Notice_Dismiss">
                 <Border Background="{StaticResource SurfaceBrush}" CornerRadius="40" Padding="64,56"
                         HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="900">

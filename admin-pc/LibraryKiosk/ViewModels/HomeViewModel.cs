@@ -75,6 +75,11 @@ public partial class HomeViewModel : ObservableObject
     /// Default false so the kiosk opens straight to the grid.</summary>
     [ObservableProperty] private bool _isWelcomeVisible;
 
+    /// <summary>First-run setup overlay (set the server URL). Shown when the kiosk has never
+    /// been configured (KioskSettings.Configured == false) so a fresh install asks for the
+    /// real server URL instead of silently failing against the unreachable default IP.</summary>
+    [ObservableProperty] private bool _isSetupVisible;
+
     // ---- search / filter ----
     [ObservableProperty] private string _query = "";
     // Grid columns follow orientation: 3 portrait, 4 landscape (per the landscape mockup).
@@ -150,6 +155,8 @@ public partial class HomeViewModel : ObservableObject
         _localSystemName = string.IsNullOrWhiteSpace(cfg.SystemName) ? null : cfg.SystemName!.Trim();
         _canvasWidth = cfg.CanvasWidth > 0 ? cfg.CanvasWidth : 1080;
         _canvasHeight = cfg.CanvasHeight > 0 ? cfg.CanvasHeight : 1920;
+        // First run (URL never configured): show the setup overlay and skip the initial connect.
+        _isSetupVisible = !cfg.Configured;
         ApplyDisplayName();
 
         _sync = new SyncService(cfg.BaseUrl, cfg.KioskId);
@@ -169,7 +176,19 @@ public partial class HomeViewModel : ObservableObject
             requestExit: () => ExitRequested?.Invoke(this, EventArgs.Empty),
             applySystemName: SetLocalSystemName,
             applyResolution: SetCanvasSize,
-            applyBackgroundOpacity: SetBackgroundOpacity);
+            applyBackgroundOpacity: SetBackgroundOpacity,
+            markConfigured: MarkConfigured);
+    }
+
+    /// <summary>First-run setup finished (URL saved and the server was reachable): persist the
+    /// Configured flag and dismiss the setup overlay so the (already loaded) browse shows.
+    /// No-op once configured, so the normal settings "save URL" path is unaffected.</summary>
+    private void MarkConfigured()
+    {
+        if (!IsSetupVisible) return;
+        var s = _settings.Load();
+        if (!s.Configured) { s.Configured = true; _settings.Save(s); }
+        IsSetupVisible = false;
     }
 
     /// <summary>Clamp a stored/incoming background opacity into the supported 0.2–1.0 range
@@ -319,6 +338,10 @@ public partial class HomeViewModel : ObservableObject
 
     public async Task StartAsync()
     {
+        // First run: wait for the admin to set a URL in the setup overlay. SaveBaseUrl ->
+        // RebindAsync connects and RefreshAsync loads; MarkConfigured then dismisses setup.
+        // (Skipping this avoids a pointless connect to the unreachable default IP.)
+        if (IsSetupVisible) return;
         await _sync.StartAsync();
         await RefreshAsync();
     }
