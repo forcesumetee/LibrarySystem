@@ -11,6 +11,7 @@
     <Product>LibraHub Admin</Product>
     <AssemblyTitle>LibraHub Admin</AssemblyTitle>
     <Description>LibraHub Admin</Description>
+    <ApplicationIcon>..\installer\LibraHub.ico</ApplicationIcon>
   </PropertyGroup>
 
   <!-- Force XAML to compile (generate .g.cs) -->

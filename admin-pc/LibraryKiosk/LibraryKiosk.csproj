@@ -13,6 +13,7 @@
     <Product>LibraHub Search</Product>
     <AssemblyTitle>LibraHub Search</AssemblyTitle>
     <Description>LibraHub Search</Description>
+    <ApplicationIcon>..\installer\LibraHub.ico</ApplicationIcon>
   </PropertyGroup>
 
   <!-- Force XAML to compile (generate .g.cs), matching LibraryAdminPC convention -->
