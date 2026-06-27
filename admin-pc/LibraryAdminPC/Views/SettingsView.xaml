@@ -199,7 +199,7 @@
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                     <TextBlock Text="ชื่อระบบ" Width="110" Foreground="{StaticResource TextSecondBrush}"/>
-                    <TextBlock Text="ระบบผู้ดูแลห้องสมุด (Library Admin-PC)"
+                    <TextBlock Text="LibraHub Admin"
                                FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">

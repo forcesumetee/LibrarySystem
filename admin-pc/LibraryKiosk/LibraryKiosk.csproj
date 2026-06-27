@@ -9,6 +9,10 @@
     <RootNamespace>LibraryKiosk</RootNamespace>
     <AssemblyName>LibraryKiosk</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- User-facing product name (exe properties/installer). AssemblyName stays LibraryKiosk. -->
+    <Product>LibraHub Search</Product>
+    <AssemblyTitle>LibraHub Search</AssemblyTitle>
+    <Description>LibraHub Search</Description>
   </PropertyGroup>
 
   <!-- Force XAML to compile (generate .g.cs), matching LibraryAdminPC convention -->

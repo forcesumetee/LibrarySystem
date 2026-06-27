@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:LibraryKiosk.ViewModels"
         xmlns:conv="clr-namespace:LibraryKiosk.Utils"
-        Title="Library Kiosk"
+        Title="LibraHub Search"
         Height="960" Width="540"
         MinHeight="480" MinWidth="270"
         WindowStartupLocation="CenterScreen"

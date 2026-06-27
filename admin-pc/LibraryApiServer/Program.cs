@@ -580,7 +580,7 @@ app.MapPost("/api/admin/kiosks/reset-pin", async (HttpRequest request, IConfigur
     return Results.Ok(new { pushed });
 }).DisableAntiforgery();
 
-app.MapGet("/", () => Results.Ok(new { message = "Library API Server running (Hardware-Bound OEM Mode)" }));
+app.MapGet("/", () => Results.Ok(new { message = "LibraHub Server running (Hardware-Bound OEM Mode)" }));
 
 app.Run();
 

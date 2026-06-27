@@ -102,7 +102,7 @@ public partial class SettingsViewModel : ObservableObject
     // ---- change-PIN / about ----
     [ObservableProperty] private string _changePinResult = "";
 
-    public string AboutVersion => "LibraryKiosk 1.0";
+    public string AboutVersion => "LibraHub Search 1.0";
 
     public SettingsViewModel(
         SettingsService settings,
