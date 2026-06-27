@@ -10,6 +10,13 @@ public sealed class KioskSettings
     /// <summary>Library API server base URL (HTTP + SignalR origin).</summary>
     public string BaseUrl { get; set; } = DefaultBaseUrl;
 
+    /// <summary>True once the admin has set the server URL at least once (first-run setup done).
+    /// Default false so a brand-new install shows the first-run "set server URL" screen instead
+    /// of silently using <see cref="DefaultBaseUrl"/> (almost never the customer's admin IP).
+    /// Older settings files without this key are migrated to true on load when they look
+    /// already-configured (custom PIN, or BaseUrl changed away from the default).</summary>
+    public bool Configured { get; set; }
+
     /// <summary>Stable per-kiosk id (GUID, generated once) so the server can count
     /// distinct kiosks regardless of reconnects. Sent on the hub connect query (K3).</summary>
     public string? KioskId { get; set; }

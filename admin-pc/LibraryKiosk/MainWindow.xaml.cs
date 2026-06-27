@@ -31,6 +31,12 @@ public partial class MainWindow : Window
         _vm.ExitRequested += OnExitRequested;
         _vm.ScrollResetRequested += OnScrollResetRequested;
         _vm.CategoryChanged += OnCategoryChanged;
+        // First-run setup overlay: pause idle while it's up (no Welcome over it); re-arm when it closes.
+        _vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(HomeViewModel.IsSetupVisible) && !_vm.IsSetupVisible)
+                RestartIdle();
+        };
 
         // Idle reset: any user input restarts the timer; firing returns the kiosk to a
         // clean browse state for the next person. Active in fullscreen (kiosk) only.
@@ -97,7 +103,8 @@ public partial class MainWindow : Window
     {
         _idleTimer.Stop();
         var seconds = _vm.IdleResetSeconds;
-        if (_isLockdown && seconds > 0)
+        // Don't run the idle->Welcome timer during first-run setup (the admin is typing the URL).
+        if (_isLockdown && seconds > 0 && !_vm.IsSetupVisible)
         {
             _idleTimer.Interval = TimeSpan.FromSeconds(seconds);
             _idleTimer.Start();
@@ -107,6 +114,7 @@ public partial class MainWindow : Window
     private void OnIdleTick(object? sender, EventArgs e)
     {
         _idleTimer.Stop();
+        if (_vm.IsSetupVisible) return; // never raise Welcome over the setup overlay
         // Idle → reset the grid for the next user and raise the Welcome overlay.
         _vm.ShowWelcome();
     }

@@ -32,6 +32,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly Action<string?> _applySystemName;         // K2 item 5
     private readonly Action<double, double> _applyResolution;  // K2 item 4 (w, h)
     private readonly Action<double> _applyBackgroundOpacity;   // background image opacity (0.2–1.0)
+    private readonly Action _markConfigured;                   // first-run: URL set + reachable
     private readonly AutoStartService _autoStart;
 
     private readonly DispatcherTimer _lockTimer;
@@ -118,7 +119,8 @@ public partial class SettingsViewModel : ObservableObject
         Action requestExit,
         Action<string?> applySystemName,
         Action<double, double> applyResolution,
-        Action<double> applyBackgroundOpacity)
+        Action<double> applyBackgroundOpacity,
+        Action markConfigured)
     {
         _settings = settings;
         _sync = sync;
@@ -134,6 +136,7 @@ public partial class SettingsViewModel : ObservableObject
         _applySystemName = applySystemName;
         _applyResolution = applyResolution;
         _applyBackgroundOpacity = applyBackgroundOpacity;
+        _markConfigured = markConfigured;
 
         var exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "";
         _autoStart = new AutoStartService(exePath);
@@ -294,6 +297,22 @@ public partial class SettingsViewModel : ObservableObject
             await _sync.RebindAsync(url);
             await _reloadAsync();
             RefreshConnectionIndicator();
+
+            // Success = the server was actually reachable (Connected, or Unlicensed which still
+            // means the URL is right). On first run this marks the kiosk Configured and closes
+            // the setup overlay; in the normal settings panel it's a no-op (already configured).
+            var (state, _) = _getStatus();
+            if (state == ConnectionState.Connected || state == ConnectionState.Unlicensed)
+            {
+                ConnectionStatus = state == ConnectionState.Connected
+                    ? "เชื่อมต่อสำเร็จ"
+                    : "เชื่อมต่อสำเร็จ (เซิร์ฟเวอร์ยังไม่ได้เปิดใช้งานลิขสิทธิ์)";
+                _markConfigured?.Invoke();
+            }
+            else
+            {
+                ConnectionStatus = "เชื่อมต่อไม่สำเร็จ — ตรวจ URL หรือเปิดเซิร์ฟเวอร์แล้วลองใหม่";
+            }
         }
         catch (Exception)
         {

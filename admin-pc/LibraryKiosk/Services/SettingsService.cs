@@ -61,7 +61,21 @@ public sealed class SettingsService
                 }
 
                 // Backfill a stable kiosk id for pre-K3 settings files (persist once).
-                if (EnsureKioskId(loaded)) SaveInternal(loaded);
+                var needsSave = EnsureKioskId(loaded);
+
+                // Migration: settings written before the Configured flag existed. Treat an
+                // already-set-up kiosk as Configured so it does NOT pop the first-run setup
+                // screen — a custom PIN, or a BaseUrl that was changed away from the default,
+                // both mean the admin already configured this kiosk.
+                if (!loaded.Configured &&
+                    (!string.IsNullOrWhiteSpace(loaded.PinHash) ||
+                     !string.Equals(loaded.BaseUrl, KioskSettings.DefaultBaseUrl, StringComparison.OrdinalIgnoreCase)))
+                {
+                    loaded.Configured = true;
+                    needsSave = true;
+                }
+
+                if (needsSave) SaveInternal(loaded);
                 return loaded;
             }
             catch (Exception ex)
