@@ -83,6 +83,19 @@ public partial class SettingsViewModel : ObservableObject
     /// <summary>Background-image opacity as a percentage (20–100); bound to a settings slider.</summary>
     [ObservableProperty] private double _backgroundOpacityPercent = 100;
 
+    // ---- theme colour (primary) ----
+    /// <summary>Preset primary-colour swatches (design-system, dark enough for white text).</summary>
+    public string[] ThemeSwatches { get; } =
+        { "#1F5AA8", "#2E8B86", "#2E9C7E", "#5A5BB8", "#C2622A", "#C0413B" };
+    /// <summary>Current primary colour as hex "#RRGGBB" (two-way synced with the R/G/B sliders).</summary>
+    [ObservableProperty] private string _primaryColorInput = ThemeService.DefaultPrimaryHex;
+    [ObservableProperty] private double _colorR = 31;
+    [ObservableProperty] private double _colorG = 90;
+    [ObservableProperty] private double _colorB = 168;
+    [ObservableProperty] private string _themeColorStatus = "";
+    // Guard so hex<->RGB two-way sync (+ initial load) doesn't recurse / persist mid-sync.
+    private bool _suppressColorSync;
+
     // ---- system (Phase 6) ----
     [ObservableProperty] private bool _autoStartEnabled;
 
@@ -143,6 +156,7 @@ public partial class SettingsViewModel : ObservableObject
         BaseUrlInput = s.BaseUrl;
         UiScalePercent = Math.Round(Math.Clamp(s.UiScale, 0.8, 1.2) * 100);
         BackgroundOpacityPercent = Math.Round(ClampOpacity(s.BackgroundOpacity) * 100);
+        LoadThemeColor(s.PrimaryColor);
         IsFullscreen = !string.Equals(s.DisplayMode, "windowed", StringComparison.OrdinalIgnoreCase);
         HideLogo = s.HideLogo;
         HideBackground = s.HideBackground;
@@ -234,6 +248,7 @@ public partial class SettingsViewModel : ObservableObject
         HideLogo = s.HideLogo;
         HideBackground = s.HideBackground;
         BackgroundOpacityPercent = Math.Round(ClampOpacity(s.BackgroundOpacity) * 100);
+        LoadThemeColor(s.PrimaryColor);
         SystemNameInput = s.SystemName ?? "";
         ResWidthInput = (s.CanvasWidth > 0 ? s.CanvasWidth : 1080).ToString();
         ResHeightInput = (s.CanvasHeight > 0 ? s.CanvasHeight : 1920).ToString();
@@ -387,6 +402,71 @@ public partial class SettingsViewModel : ObservableObject
 
         var s = _settings.Load();
         s.BackgroundOpacity = opacity;
+        _settings.Save(s);
+    }
+
+    // ---- theme colour (primary) ----
+
+    /// <summary>Load a saved primary colour into the inputs (no apply/persist — read-only sync).</summary>
+    private void LoadThemeColor(string? hex)
+    {
+        var c = ThemeService.ParseOrDefault(hex);
+        _suppressColorSync = true;
+        PrimaryColorInput = ThemeService.ToHex(c);
+        ColorR = c.R; ColorG = c.G; ColorB = c.B;
+        ThemeColorStatus = "";
+        _suppressColorSync = false;
+    }
+
+    /// <summary>Pick a preset swatch (hex). Drives <see cref="PrimaryColorInput"/> -> apply.</summary>
+    [RelayCommand]
+    private void SelectThemeSwatch(string? hex) => PrimaryColorInput = hex ?? ThemeService.DefaultPrimaryHex;
+
+    /// <summary>Reset the primary colour back to the default blue.</summary>
+    [RelayCommand]
+    private void ResetThemeColor() => PrimaryColorInput = ThemeService.DefaultPrimaryHex;
+
+    // Hex box is the single source of truth: editing it (or a swatch/reset) re-syncs the RGB
+    // sliders then applies+persists. RGB slider changes compose a new hex (handled below).
+    partial void OnPrimaryColorInputChanged(string value)
+    {
+        if (_suppressColorSync) return;
+        if (!ThemeService.TryParseHex(value, out var c))
+        {
+            ThemeColorStatus = "รหัสสีไม่ถูกต้อง (เช่น #1F5AA8)";
+            return;
+        }
+        _suppressColorSync = true;
+        ColorR = c.R; ColorG = c.G; ColorB = c.B;
+        _suppressColorSync = false;
+        ApplyThemeColor(c);
+    }
+
+    partial void OnColorRChanged(double value) => OnRgbSliderChanged();
+    partial void OnColorGChanged(double value) => OnRgbSliderChanged();
+    partial void OnColorBChanged(double value) => OnRgbSliderChanged();
+
+    private void OnRgbSliderChanged()
+    {
+        if (_suppressColorSync) return;
+        var c = System.Windows.Media.Color.FromRgb((byte)Math.Clamp(ColorR, 0, 255),
+            (byte)Math.Clamp(ColorG, 0, 255), (byte)Math.Clamp(ColorB, 0, 255));
+        _suppressColorSync = true;
+        PrimaryColorInput = ThemeService.ToHex(c); // reflect in the hex box (no recurse)
+        _suppressColorSync = false;
+        ApplyThemeColor(c);
+    }
+
+    /// <summary>Apply the colour live to the shared theme brushes and persist it (PrimaryColor
+    /// only — every other setting is loaded and saved back untouched).</summary>
+    private void ApplyThemeColor(System.Windows.Media.Color c)
+    {
+        var hex = ThemeService.ToHex(c);
+        ThemeService.Apply(hex);             // live: recolours the whole UI (both orientations)
+        ThemeColorStatus = "";
+
+        var s = _settings.Load();
+        s.PrimaryColor = hex;
         _settings.Save(s);
     }
 

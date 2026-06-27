@@ -2,12 +2,30 @@ using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using LibraryKiosk.Services;
 using LibraryKiosk.Utils;
 
 namespace LibraryKiosk;
 
 public partial class App : Application
 {
+    /// <summary>Apply the saved per-kiosk primary theme colour to the shared brushes BEFORE
+    /// the main window is built (StartupUri), so it renders themed with no flash of default
+    /// blue. Never throws — a bad/missing colour falls back to the default.</summary>
+    protected override void OnStartup(StartupEventArgs e)
+    {
+        try
+        {
+            var settings = new SettingsService().Load();
+            ThemeService.Apply(settings.PrimaryColor);
+        }
+        catch (Exception ex)
+        {
+            KioskLog.Error("Failed to apply theme colour at startup; using default.", ex);
+        }
+        base.OnStartup(e); // processes StartupUri -> creates MainWindow (now themed)
+    }
+
     public App()
     {
         // A kiosk must never crash to the desktop in front of a user. Cover all three

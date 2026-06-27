@@ -18,6 +18,10 @@
     <Color x:Key="PrimaryColor">#1F5AA8</Color>
     <Color x:Key="PrimaryDarkColor">#17467F</Color>
     <Color x:Key="PrimaryTintColor">#EAF1FA</Color>
+    <!-- Foreground for text/icons that sit ON the primary fill (buttons, selected chip).
+         Default white; ThemeService recomputes it (white vs dark) from the chosen primary's
+         luminance at startup + on live change, so any picked colour stays readable. -->
+    <Color x:Key="OnPrimaryColor">#FFFFFF</Color>
     <Color x:Key="AccentColor">#E0922E</Color>
     <Color x:Key="SuccessColor">#2E9C7E</Color>
     <Color x:Key="ErrorColor">#D2544A</Color>
@@ -33,6 +37,7 @@
     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
     <SolidColorBrush x:Key="PrimaryDarkBrush" Color="{StaticResource PrimaryDarkColor}" />
     <SolidColorBrush x:Key="PrimaryTintBrush" Color="{StaticResource PrimaryTintColor}" />
+    <SolidColorBrush x:Key="OnPrimaryBrush" Color="{StaticResource OnPrimaryColor}" />
     <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
     <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
     <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}" />

@@ -50,6 +50,12 @@ public sealed class KioskSettings
     public bool HideLogo { get; set; }
     public bool HideBackground { get; set; }
 
+    /// <summary>Primary theme colour (hex "#RRGGBB") on THIS kiosk only. Drives every
+    /// primary-blue element (buttons/chips/header/pressed/tint/gradient) via the derived
+    /// brushes. Default "#1F5AA8"; older settings files without this field load as the
+    /// default (System.Text.Json keeps the property initializer when the key is absent).</summary>
+    public string PrimaryColor { get; set; } = "#1F5AA8";
+
     /// <summary>Opacity of the book-list panel surface on THIS kiosk only (0.2–1.0).
     /// Fading the panel lets the branding background show through behind the list, while
     /// the search/chips/cards on top stay fully opaque. Default 1.0 = current behaviour;
