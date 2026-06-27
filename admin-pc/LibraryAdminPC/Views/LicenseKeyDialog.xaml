@@ -13,6 +13,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <StackPanel>
@@ -22,8 +23,31 @@
                            Foreground="{StaticResource TextSecondBrush}" FontSize="12" Margin="0,4,0,0"/>
             </StackPanel>
 
+            <!-- Machine ID: copy this into the keygen to generate the Product Key. Read-only
+                 (selectable) + a copy button. Source = GET /api/license/status (same as SettingsView). -->
             <StackPanel Grid.Row="1" Margin="0,18,0,0">
-                <TextBlock Text="Example: LS-XXXX-XXXX-XXXX-XXXX"
+                <TextBlock Text="Machine ID (สำหรับสร้างคีย์)"
+                           Foreground="{StaticResource TextSecondBrush}" FontSize="12" Margin="0,0,0,6"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="TxtMachineId" Grid.Column="0"
+                             Text="กำลังโหลด..."
+                             IsReadOnly="True" IsReadOnlyCaretVisible="True"
+                             MinWidth="332"
+                             Style="{StaticResource InputTextBoxStyle}"
+                             FontFamily="{StaticResource MonoFontFamily}"/>
+                    <Button x:Name="BtnCopy" Grid.Column="1" Content="ก๊อป"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            MinWidth="76" Margin="10,0,0,0" IsEnabled="False"
+                            Click="BtnCopy_Click"/>
+                </Grid>
+            </StackPanel>
+
+            <StackPanel Grid.Row="2" Margin="0,18,0,0">
+                <TextBlock Text="ตัวอย่าง: XXXX-XXXX-XXXX-XXXX"
                            Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,0,0,6"/>
                 <TextBox x:Name="TxtKey"
                          Style="{StaticResource InputTextBoxStyle}"
@@ -31,7 +55,7 @@
                          FontFamily="{StaticResource MonoFontFamily}"/>
             </StackPanel>
 
-            <StackPanel Grid.Row="2"
+            <StackPanel Grid.Row="3"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         Margin="0,22,0,0">
